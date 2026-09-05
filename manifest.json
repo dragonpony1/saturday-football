@@ -1,0 +1,14 @@
+{
+  "name": "Mess With 'Em All",
+  "short_name": "Mess W'Em",
+  "description": "Family college football pick'em league",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#1D428A",
+  "theme_color": "#1D428A",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

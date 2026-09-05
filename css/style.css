@@ -13,6 +13,8 @@ header { background: var(--field); color: var(--chalk); padding: 18px 16px 0; po
 h1 { font: 600 28px/1 Oswald, sans-serif; letter-spacing: .5px; margin: 0; }
 .who { font-size: 14px; opacity: .9; }
 .who button { background: none; border: 0; color: var(--chalk); text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0 0 0 6px; }
+.who .sharebtn { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; border: 1px solid rgba(244,244,241,.45); border-radius: 999px; padding: 4px 11px; margin-left: 8px; font: 500 13px Oswald, sans-serif; letter-spacing: .3px; }
+.who .sharebtn:hover { background: rgba(244,244,241,.12); }
 
 .tabs { display: flex; gap: 4px; margin-top: 14px; }
 .tabs button { background: none; border: 0; color: var(--chalk); font: 500 17px Oswald, sans-serif; letter-spacing: .4px; padding: 8px 12px 10px; cursor: pointer; opacity: .7; border-bottom: 3px solid transparent; }

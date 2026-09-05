@@ -31,6 +31,22 @@ const state = {
 function bindNav() {
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
   $("#signout").onclick = () => { localStorage.removeItem("player"); state.player = null; render(); };
+  $("#share").onclick = shareInvite;
+}
+
+async function shareInvite() {
+  const text = `Join our family football pick'em league — Mess With 'Em All!\n${location.origin + location.pathname}\nPasscode: ${LEAGUE_PASSCODE}`;
+  try {
+    await navigator.share({ text });
+  } catch (e) {
+    if (e.name === "AbortError") return;
+    try {
+      await navigator.clipboard.writeText(text);
+      $("#banner").textContent = "Invite copied — paste it into a text to the family.";
+    } catch {
+      $("#banner").textContent = `Share this link with the passcode "${LEAGUE_PASSCODE}": ${location.origin + location.pathname}`;
+    }
+  }
 }
 
 function setView(v) {
