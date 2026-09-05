@@ -28,6 +28,7 @@ const state = {
   setTimeout(maybeInstallTip, 2000); // give the join greeting first claim on the banner
   setInterval(refreshChat, 30_000); // keep the league chat fresh while it's on screen
   setInterval(liveTick, 60_000);    // live scores + standings while the app is open
+  setInterval(updateChatPulse, 45_000); updateChatPulse(); // chat ribbon + unread badge
   const now = Date.now();
   const cur = state.calendar.find(c => c.end && now >= c.start && now <= c.end)
            || state.calendar.find(c => c.end && now < c.end) || state.calendar[0];
@@ -100,7 +101,23 @@ async function checkForUpdate() {
 let installPrompt = null;
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; });
 
-// A one-time nudge for people using the app in a plain browser tab.
+// The chat ribbon at the top and the unread badge on the League tab.
+async function updateChatPulse() {
+  const bar = $("#ticker");
+  if (!state.league || !api.isConfigured()) { if (bar) bar.hidden = true; return; }
+  try {
+    const msgs = await api.listMessages(state.league.id);
+    const last = msgs[msgs.length - 1];
+    if (bar) {
+      bar.hidden = !last;
+      if (last) $("#tickertext").textContent = `💬 ${last.players?.name || "?"}: ${last.body}`;
+    }
+    const seen = +localStorage.getItem("chatread-" + state.league.id) || 0;
+    const unread = msgs.filter(m => new Date(m.created_at).getTime() > seen).length;
+    const tab = document.querySelector('[data-view="standings"]');
+    if (tab) tab.textContent = unread ? `League 💬${unread}` : "League";
+  } catch {} // quiet: the ribbon just tries again next round
+}
 function maybeInstallTip() {
   if (matchMedia("(display-mode: standalone)").matches || navigator.standalone) return;
   if (localStorage.getItem("a2hs-done")) return;
@@ -138,6 +155,7 @@ function bindNav() {
   };
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
   $("#who").onclick = () => { state.showJoin = true; setView("picks"); };
+  $("#ticker").onclick = () => { setView("standings"); setTimeout(() => document.querySelector(".chat")?.scrollIntoView({ behavior: "smooth" }), 400); };
   $("#signout").onclick = () => {
     localStorage.removeItem("player"); localStorage.removeItem("league");
     state.player = null; state.league = null; state.players = []; state.picks = [];
@@ -717,6 +735,10 @@ async function refreshChat(scrollDown = false) {
       : `<p class="hint">No messages yet — start the trash talk.</p>`;
     el.dataset.key = key;
     if (scrollDown || nearBottom) el.scrollTop = el.scrollHeight;
+    // Looking at the chat counts as reading it.
+    localStorage.setItem("chatread-" + leagueId, String(Date.now()));
+    const tab = document.querySelector('[data-view="standings"]');
+    if (tab) tab.textContent = "League";
   } catch (e) { console.error(e); }
 }
 
