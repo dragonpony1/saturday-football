@@ -130,6 +130,12 @@ export function listMessages(leagueId) {
     .then(rows => rows.reverse());
 }
 
+// Tie-breaker rolls this week: pulled straight from the chat log, so a roll
+// can't be redone from another phone either.
+export function listRolls(leagueId, sinceISO) {
+  return rest(`messages?league_id=eq.${encodeURIComponent(leagueId)}&body=like.${encodeURIComponent("🎲 rolled ")}*&created_at=gte.${encodeURIComponent(sinceISO)}&select=player_id,body,created_at`);
+}
+
 export function sendMessage(playerId, leagueId, body) {
   return rest("messages", {
     method: "POST",

@@ -74,6 +74,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .modalcard .code b { color: var(--line); }
 #sendinvite { width: 100%; background: var(--field); color: var(--chalk); border: 0; border-radius: 6px; padding: 11px; font: 500 18px Oswald, sans-serif; cursor: pointer; }
 .linkbtn { background: none; border: 0; color: var(--mute); text-decoration: underline; margin-top: 10px; cursor: pointer; font-size: 14px; }
+.linkbtn:disabled { color: var(--good); text-decoration: none; cursor: default; font-weight: 700; }
 
 .join { background: var(--card); border-radius: 8px; padding: 20px; max-width: 380px; margin: 30px auto; display: flex; flex-direction: column; gap: 12px; }
 .join[hidden] { display: none; }

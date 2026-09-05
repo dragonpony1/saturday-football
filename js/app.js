@@ -101,6 +101,31 @@ async function checkForUpdate() {
 let installPrompt = null;
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; });
 
+// This player's tie-breaker roll for the current week, from the chat log.
+async function myRollThisWeek() {
+  const entry = state.calendar.find(c => c.value === state.week);
+  const since = entry?.start ? new Date(entry.start).toISOString() : new Date(0).toISOString();
+  const rolls = await api.listRolls(state.league.id, since);
+  return rolls.find(r => r.player_id === state.player.id) || null;
+}
+
+// The roll button says where you stand: ready to roll, or locked in.
+async function updateRollBtn() {
+  if (!$("#rollbtn")) return;
+  try {
+    const mine = await myRollThisWeek();
+    const btn = $("#rollbtn");
+    if (!btn || state.view !== "standings") return;
+    if (mine) {
+      btn.textContent = `🎲 Locked in: ${(mine.body.match(/rolled (\d+)/) || [])[1]}`;
+      btn.disabled = true;
+    } else {
+      btn.textContent = "🎲 Roll your tie-breaker";
+      btn.disabled = false;
+    }
+  } catch {}
+}
+
 // The chat ribbon at the top and the unread badge on the League tab.
 async function updateChatPulse() {
   const bar = $("#ticker");
@@ -548,7 +573,7 @@ function renderRules() {
       <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>
       <li><b>Everyone's picks show under each game</b> — even before kickoff. Copy at your own risk; the scoreboard remembers who thought of it first.</li>
       <li><b>The League tab</b> holds the standings and the league chat. Standings add up the whole season; games still being played don't count until they're final.</li>
-      <li><b>Tied?</b> The 🎲 tie-breaker button on the League tab posts a public roll (1–100) into the chat — highest roll wins, no take-backs.</li>
+      <li><b>Tied?</b> The 🎲 tie-breaker button on the League tab posts a public roll (1–100) into the chat. <b>One roll per week, locked in</b> — highest roll wins, no take-backs.</li>
       <li><b>New folks join</b> with the league passcode and their name — same name every time, so picks stay together.</li>
     </ul>
   </div>`;
@@ -634,14 +659,25 @@ async function renderStandings() {
     $("#standingsbox").innerHTML = standingsHtml();
   };
 
-  // A public dice roll: it lands in the chat with your name on it, so a roll
-  // can't be quietly redone until it looks better.
+  // A public dice roll: one per player per week, locked in. The chat log is
+  // the record, so it can't be redone from another phone either.
   $("#rollbtn").onclick = async () => {
-    if (!confirm("Roll your tie-breaker number? It posts to the chat for everyone to see.")) return;
-    const n = 1 + (crypto.getRandomValues(new Uint32Array(1))[0] % 100);
-    try { await api.sendMessage(state.player.id, state.league.id, `🎲 rolled ${n} (tie-breaker)`); await refreshChat(true); }
-    catch (e) { $("#banner").textContent = "The roll didn't post. Try again."; console.error(e); }
+    try {
+      const mine = await myRollThisWeek();
+      if (mine) {
+        const n = (mine.body.match(/rolled (\d+)/) || [])[1];
+        $("#banner").textContent = `Your tie-breaker is locked in for this week: ${n}. One roll per week.`;
+        updateRollBtn();
+        return;
+      }
+      if (!confirm(`Roll your one-and-only week ${state.week} tie-breaker? The number locks in and posts to the chat.`)) return;
+      const n = 1 + (crypto.getRandomValues(new Uint32Array(1))[0] % 100);
+      await api.sendMessage(state.player.id, state.league.id, `🎲 rolled ${n} (week ${state.week} tie-breaker)`);
+      await refreshChat(true);
+      updateRollBtn();
+    } catch (e) { $("#banner").textContent = "The roll didn't post. Try again."; console.error(e); }
   };
+  updateRollBtn();
 
   $("#chatform").onsubmit = async e => {
     e.preventDefault();
