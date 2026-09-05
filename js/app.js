@@ -235,6 +235,13 @@ function pickRow(g, picked, locked, famPicks) {
 
 async function makePick(g, teamId) {
   const p = state.picks.find(p => p.player_id === state.player.id && p.week === state.week && p.game_id === g.id);
+  if (p && p.team_id === teamId) return; // same pick, nothing to do
+  if (p) {
+    // Guard against fat-fingered changes: switching an existing pick asks first.
+    const from = (g.away.id === p.team_id ? g.away : g.home).name;
+    const to = (g.away.id === teamId ? g.away : g.home).name;
+    if (!confirm(`Change your pick from ${from} to ${to}?`)) return;
+  }
   if (p) p.team_id = teamId; else state.picks.push({ player_id: state.player.id, week: state.week, game_id: g.id, team_id: teamId });
   render();
   try { await api.savePick(state.player.id, state.week, g.id, teamId, state.league.id); }
