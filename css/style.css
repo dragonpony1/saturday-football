@@ -83,7 +83,8 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .tlogo { width: 22px; height: 22px; object-fit: contain; flex: 0 0 22px; }
 .updatebar { background: #e8effc; border-left-color: var(--field); font-weight: 600; }
 
-.leaguehead { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.leaguehead { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.leaguehead .lpic { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; }
 .leaguehead .licon { font-size: 32px; line-height: 1; }
 .leaguehead h2 { font: 500 26px Oswald, sans-serif; color: var(--field); margin: 0; }
 

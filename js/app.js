@@ -25,6 +25,7 @@ const state = {
   }
   checkForUpdate(); setInterval(checkForUpdate, 5 * 60_000);
   setInterval(refreshChat, 30_000); // keep the league chat fresh while it's on screen
+  setInterval(liveTick, 60_000);    // live scores + standings while the app is open
   const now = Date.now();
   const cur = state.calendar.find(c => c.end && now >= c.start && now <= c.end)
            || state.calendar.find(c => c.end && now < c.end) || state.calendar[0];
@@ -431,7 +432,7 @@ async function switchLeague(m) {
 
 // Make this the active league and keep localStorage + the memberships list current.
 function rememberLeague(league) {
-  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all", icon: league.icon || "🏈" };
+  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all", icon: league.icon || "🏈", icon_url: league.icon_url || null };
   localStorage.setItem("league", JSON.stringify(state.league));
   state.memberships = state.memberships.map(m => m.league.id === league.id ? { ...m, league: state.league } : m);
   localStorage.setItem("memberships", JSON.stringify(state.memberships));
@@ -491,17 +492,7 @@ function renderRules() {
 
 // ---------- standings ----------
 
-async function renderStandings() {
-  const el = $("#content");
-  if (!api.isConfigured()) { el.innerHTML = `<p class="note">League isn't set up yet — see the README.</p>`; return; }
-  if (!state.league) { el.innerHTML = `<p class="note">Join a league on the <b>My picks</b> tab to see its standings.</p>`; return; }
-  el.innerHTML = `<p class="note">Adding up the season…</p>`;
-
-  const weeksToScore = [...new Set(state.picks.map(p => p.week))].sort((a, b) => a - b);
-  await Promise.all(weeksToScore.filter(w => !state.weekGames.has(w))
-    .map(async w => state.weekGames.set(w, await api.fetchWeek(w).catch(() => []))));
-  if (state.view !== "standings") return; // the user moved on while we were fetching
-
+function standingsHtml() {
   const winners = new Map(); // game_id -> winning team id
   for (const games of state.weekGames.values())
     for (const g of games) if (g.state === "post") winners.set(g.id, g.home.winner ? g.home.id : g.away.id);
@@ -521,22 +512,35 @@ async function renderStandings() {
     return { name: pl.name, total, decided, byWeek, thisWeek: byWeek[state.week] };
   }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
-  const head = `<div class="leaguehead"><span class="licon">${esc(state.league.icon || "🏈")}</span>
-    <h2>${esc(state.league.name)}</h2></div>`;
-
-  const table = rows.length
+  return rows.length
     ? `<table class="standings"><thead><tr><th></th><th>Player</th><th>Season</th><th>This week</th><th>Hit rate</th></tr></thead>
       <tbody>${rows.map((r, i) => `<tr class="${state.player && r.name === state.player.name ? "me" : ""}">
         <td class="pos">${i + 1}</td><td>${esc(r.name)}</td><td class="num big">${r.total}</td>
         <td class="num">${r.thisWeek ? `${r.thisWeek.right} / ${r.thisWeek.played}` : "—"}</td>
         <td class="num">${r.decided ? Math.round(100 * r.total / r.decided) + "%" : "—"}</td></tr>`).join("")}</tbody></table>
-      <p class="hint">One point per correct pick. Games that haven't finished don't count yet.</p>`
+      <p class="hint">One point per correct pick. Live — points land as each game goes final.</p>`
     : `<p class="note"><b>Nobody has joined yet.</b><br>Share the link and the passcode.</p>`;
+}
 
-  el.innerHTML = `${head}${table}
+async function renderStandings() {
+  const el = $("#content");
+  if (!api.isConfigured()) { el.innerHTML = `<p class="note">League isn't set up yet — see the README.</p>`; return; }
+  if (!state.league) { el.innerHTML = `<p class="note">Join a league on the <b>My picks</b> tab to see its standings.</p>`; return; }
+
+  const pic = state.league.icon_url
+    ? `<img class="lpic" src="${esc(state.league.icon_url)}" alt="">`
+    : `<span class="licon">${esc(state.league.icon || "🏈")}</span>`;
+  const head = `<div class="leaguehead">${pic}<h2>${esc(state.league.name)}</h2>
+    <button type="button" class="linkbtn" id="picbtn">${state.league.icon_url ? "Change photo" : "Add league photo"}</button>
+    <input type="file" id="picfile" accept="image/*" hidden></div>`;
+
+  el.innerHTML = `${head}<div id="standingsbox"><p class="note">Adding up the season…</p></div>
     <section class="chat"><h3>League chat</h3><div id="chatlist"><p class="hint">Loading…</p></div>
     <form id="chatform"><input name="body" maxlength="300" placeholder="Talk your talk…" autocomplete="off" required>
     <button type="submit">Send</button></form></section>`;
+
+  $("#picbtn").onclick = () => $("#picfile").click();
+  $("#picfile").onchange = uploadLeaguePhoto;
 
   $("#chatform").onsubmit = async e => {
     e.preventDefault();
@@ -550,6 +554,63 @@ async function renderStandings() {
     } catch (err) { $("#banner").textContent = "That message didn't send. Try again."; console.error(err); }
   };
   refreshChat(true);
+
+  const weeksToScore = [...new Set(state.picks.map(p => p.week))].sort((a, b) => a - b);
+  await Promise.all(weeksToScore.filter(w => !state.weekGames.has(w))
+    .map(async w => state.weekGames.set(w, await api.fetchWeek(w).catch(() => []))));
+  if (state.view !== "standings") return; // the user moved on while we were fetching
+  const box = $("#standingsbox");
+  if (box) box.innerHTML = standingsHtml();
+}
+
+// The photo becomes the league's face for everyone in it.
+async function uploadLeaguePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const btn = $("#picbtn");
+  if (btn) btn.textContent = "Uploading…";
+  try {
+    const blob = await shrinkImage(file);
+    const url = await api.uploadLeaguePic(state.league.id, blob);
+    await api.setLeaguePic(state.league.id, url);
+    rememberLeague({ ...state.league, icon_url: url });
+    render();
+    $("#banner").textContent = "League photo updated for everyone. 📸";
+  } catch (err) {
+    if (btn) btn.textContent = "Add league photo";
+    $("#banner").textContent = "Couldn't use that photo. Try a different one.";
+    console.error(err);
+  }
+}
+
+// Shrink a phone photo to a small square-ish JPEG before uploading.
+async function shrinkImage(file, max = 512) {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(bmp.width * scale));
+  c.height = Math.max(1, Math.round(bmp.height * scale));
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("bad image")), "image/jpeg", 0.85));
+}
+
+// Live scoreboard: while the app is on screen, refresh this week's games each
+// minute so scores tick and standings points land as games go final.
+async function liveTick() {
+  if (document.hidden || !state.week || !api.isConfigured()) return;
+  try {
+    const fresh = await api.fetchWeek(state.week, { force: true });
+    state.games = fresh; state.weekGames.set(state.week, fresh);
+    if (state.league) await loadLeague().catch(() => {});
+  } catch { return; }
+  if (state.view === "schedule") renderSchedule();
+  else if (state.view === "picks" && state.player && state.league && !state.showJoin) {
+    const entry = state.calendar.find(c => c.value === state.week);
+    const y = scrollY; renderPicks(entry); scrollTo(0, y);
+  } else if (state.view === "standings" && state.league) {
+    const box = $("#standingsbox");
+    if (box) box.innerHTML = standingsHtml();
+  }
 }
 
 // Reload the chat list in place (no full re-render). Overlapping calls and

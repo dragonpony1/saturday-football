@@ -80,12 +80,12 @@ export function isConfigured() {
 }
 
 export async function getLeagueById(id) {
-  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode,pick_mode,icon`);
+  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode,pick_mode,icon,icon_url`);
   return rows[0] || null;
 }
 
 export async function getLeague(passcode) {
-  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode,pick_mode,icon`);
+  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode,pick_mode,icon,icon_url`);
   return rows[0] || null;
 }
 
@@ -98,8 +98,26 @@ export async function createLeague(name, passcode, pickMode, icon) {
 
 // For players saved on a phone before leagues existed: look up which league they're in.
 export async function getPlayerLeague(playerId) {
-  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode,pick_mode,icon)`);
+  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode,pick_mode,icon,icon_url)`);
   return rows[0]?.leagues || null;
+}
+
+// ---------- league photo ----------
+
+export async function uploadLeaguePic(leagueId, blob) {
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/league-pics/${encodeURIComponent(leagueId)}.jpg`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, "Content-Type": "image/jpeg", "x-upsert": "true" },
+    body: blob,
+  });
+  if (!res.ok) throw new Error(`Storage ${res.status}: ${await res.text()}`);
+  return `${SUPABASE_URL}/storage/v1/object/public/league-pics/${encodeURIComponent(leagueId)}.jpg?v=${Date.now()}`;
+}
+
+export function setLeaguePic(leagueId, url) {
+  return rest(`leagues?id=eq.${encodeURIComponent(leagueId)}`, {
+    method: "PATCH", body: JSON.stringify({ icon_url: url }),
+  });
 }
 
 // ---------- chat ----------

@@ -8,6 +8,7 @@ create table if not exists leagues (
   passcode text not null unique,
   pick_mode text not null default 'all', -- all | ranked | big12ranked | main
   icon text not null default '🏈',
+  icon_url text, -- optional league photo, stored in the public 'league-pics' bucket
   created_at timestamptz default now()
 );
 
