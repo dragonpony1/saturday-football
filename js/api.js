@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY, SEASON, LOCK_HOUR, LOCK_TZ } from "./config.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, SEASON, LOCK_HOUR, LOCK_TZ, OPEN_WEEKS } from "./config.js";
 
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard";
 
@@ -53,7 +53,11 @@ function parseGames(json) {
 // ---------- Lock time ----------
 
 // Returns the Date when picks lock for a week: Thursday at LOCK_HOUR in LOCK_TZ.
+// Open weeks stay pickable until the week ends; each game still locks at kickoff.
 export function lockTimeFor(weekEntry) {
+  if (OPEN_WEEKS.includes(weekEntry.value)) {
+    return weekEntry.end ? new Date(weekEntry.end) : new Date(Date.now() + 7 * 864e5);
+  }
   const d = new Date(weekEntry.start);
   for (let i = 0; i < 8; i++) {
     const wd = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: LOCK_TZ }).format(d);

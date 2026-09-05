@@ -11,3 +11,7 @@ export const SEASON = 2026;
 // Thursday-night games kick off after this, so nobody can pick after seeing a result.
 export const LOCK_HOUR = 12; // noon
 export const LOCK_TZ = "America/Denver";
+
+// Weeks listed here skip the Thursday lock — each game still locks at its own
+// kickoff. One-off so the family could join mid-week 1; remove after week 1.
+export const OPEN_WEEKS = [1];
