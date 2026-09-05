@@ -126,6 +126,20 @@ async function loadLeague() {
   [state.players, state.picks] = await Promise.all([
     api.listPlayers(state.league.id), api.listAllPicks(state.league.id),
   ]);
+  announceNewPlayers();
+}
+
+// Greet returning users with anyone who joined since their last visit.
+function announceNewPlayers() {
+  if (!state.league) return;
+  const key = "seen-" + state.league.id;
+  const seen = JSON.parse(localStorage.getItem(key) || "null");
+  const names = state.players.map(p => p.name).sort();
+  if (seen) {
+    const fresh = names.filter(n => !seen.includes(n) && n !== state.player?.name);
+    if (fresh.length) $("#banner").textContent = `🎉 New in ${state.league.name}: ${fresh.join(", ")}`;
+  }
+  localStorage.setItem(key, JSON.stringify(names));
 }
 
 function showLeagueError(e) {
@@ -189,7 +203,7 @@ function renderPicks(entry) {
   const locked = Date.now() >= lock;
   const board = state.games.filter(g => onBoard(g, state.league.pick_mode));
   const made = board.filter(g => mine.has(g.id)).length;
-  const modeLabel = { big12ranked: " · Big 12 + ranked", ranked: " · ranked matchups only" }[state.league.pick_mode] || "";
+  const modeLabel = { main: " · main conferences", big12ranked: " · Big 12 + ranked", ranked: " · ranked matchups only" }[state.league.pick_mode] || "";
 
   el.innerHTML = `<div class="lockbar ${locked ? "locked" : ""}">
     <span>${locked ? "Picks are locked for this week." : `Picks lock ${fmtDateTime(lock)}.`}</span>
@@ -288,6 +302,7 @@ function renderJoin() {
     <label>Make up a passcode<input name="code" required autocomplete="off" placeholder="something easy to text"></label>
     <label>Your name<input name="name" required autocomplete="off"></label>
     <label>Games to pick<select name="mode">
+      <option value="main">Main conferences + all Big 12 + ranked (about 35 a week)</option>
       <option value="big12ranked">Big 12 + ranked matchups (about 25 a week)</option>
       <option value="ranked">Ranked matchups only (about 20 a week)</option>
       <option value="all">Every FBS game (about 100 a week)</option>
@@ -380,10 +395,17 @@ function dropDeadLeague(leagueId) {
 
 const normCode = s => String(s).trim().toLowerCase();
 
-// Which games a league picks: its whole board, ranked matchups, or Big 12 + ranked.
+// ESPN conference ids for the main conferences: ACC, Big 12, Big Ten, SEC, Pac-12, Mountain West.
+const MAIN_CONFS = new Set(["1", "4", "5", "8", "9", "17"]);
+
+// Which games a league picks: its whole board, ranked matchups, Big 12 + ranked,
+// or main = main-conference matchups + every Big 12 game + anything ranked.
 function onBoard(g, mode) {
-  if (mode === "ranked") return !!(g.home.rank || g.away.rank);
-  if (mode === "big12ranked") return !!(g.home.rank || g.away.rank || g.home.conf === "4" || g.away.conf === "4");
+  const ranked = !!(g.home.rank || g.away.rank);
+  if (mode === "ranked") return ranked;
+  if (mode === "big12ranked") return ranked || g.home.conf === "4" || g.away.conf === "4";
+  if (mode === "main") return ranked || g.home.conf === "4" || g.away.conf === "4"
+    || (MAIN_CONFS.has(g.home.conf) && MAIN_CONFS.has(g.away.conf));
   return true;
 }
 
