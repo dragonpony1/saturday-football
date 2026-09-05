@@ -117,6 +117,7 @@ async function shareInvite() {
 
 function setView(v) {
   state.view = v;
+  $("#banner").textContent = ""; // messages are of-the-moment; don't let one linger forever
   document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
   render();
 }
