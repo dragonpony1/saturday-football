@@ -46,7 +46,10 @@ const state = {
       state.memberships.push({ league: state.league, player: state.player });
       localStorage.setItem("memberships", JSON.stringify(state.memberships));
     }
-    if (state.player) api.touchPlayer(state.player.id).catch(() => {});
+    if (state.player) {
+      const standalone = matchMedia("(display-mode: standalone)").matches || !!navigator.standalone;
+      api.touchPlayer(state.player.id, standalone).catch(() => {});
+    }
     if (state.league) {
       // A league can be deleted or have settings changed behind the scenes.
       const fresh = await api.getLeagueById(state.league.id).catch(() => state.league);

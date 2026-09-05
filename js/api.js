@@ -146,10 +146,11 @@ export async function getOrCreatePlayer(name, leagueId) {
   return created[0];
 }
 
-// Quiet "I was here" ping so the league can see who's been around.
-export function touchPlayer(playerId) {
+// Quiet "I was here" ping so the league can see who's been around, and how.
+export function touchPlayer(playerId, standalone) {
   return rest(`players?id=eq.${encodeURIComponent(playerId)}`, {
-    method: "PATCH", body: JSON.stringify({ last_seen: new Date().toISOString() }),
+    method: "PATCH",
+    body: JSON.stringify({ last_seen: new Date().toISOString(), last_via: standalone ? "home screen" : "browser" }),
   });
 }
 
