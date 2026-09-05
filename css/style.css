@@ -114,6 +114,10 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .standings td { padding: 12px; border-bottom: 1px solid var(--rule); font-size: 17px; }
 .standings tr.me td { background: #eaf0fb; }
 .standings .pos { color: var(--mute); width: 30px; font: 500 15px Oswald, sans-serif; }
+.standings tr[data-pid] { cursor: pointer; }
+.recaprow td { background: var(--chalk); font-size: 14px; line-height: 1.8; }
+.recaprow .rgt { color: var(--good); font-weight: 700; }
+.recaprow .wrg { color: var(--live); font-weight: 700; }
 .standings .num { text-align: right; font-family: Oswald, sans-serif; }
 .standings .num.big { font-size: 22px; color: var(--field); }
 .standings th:nth-child(n+3) { text-align: right; }

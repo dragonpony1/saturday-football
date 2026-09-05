@@ -11,6 +11,7 @@ const state = {
   weekGames: new Map(),             // week -> games (for standings)
   showFinished: false,              // My picks: finished games are tucked away by default
   showJoin: false,                  // signed-in user asked to join/start another league
+  recapPlayer: null,                // standings row expanded into a week recap
 };
 
 // ---------- boot ----------
@@ -554,17 +555,37 @@ function standingsHtml() {
       byWeek[p.week].played++;
       if (w === p.team_id) { total++; byWeek[p.week].right++; }
     }
-    return { name: pl.name, total, decided, byWeek, thisWeek: byWeek[state.week] };
+    return { id: pl.id, name: pl.name, total, decided, byWeek, thisWeek: byWeek[state.week] };
   }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
   return rows.length
     ? `<table class="standings"><thead><tr><th></th><th>Player</th><th>Season</th><th>This week</th><th>Hit rate</th></tr></thead>
-      <tbody>${rows.map((r, i) => `<tr class="${state.player && r.name === state.player.name ? "me" : ""}">
+      <tbody>${rows.map((r, i) => `<tr data-pid="${r.id}" class="${state.player && r.name === state.player.name ? "me" : ""}">
         <td class="pos">${i + 1}</td><td>${esc(r.name)}</td><td class="num big">${r.total}</td>
         <td class="num">${r.thisWeek ? `${r.thisWeek.right} / ${r.thisWeek.played}` : "—"}</td>
-        <td class="num">${r.decided ? Math.round(100 * r.total / r.decided) + "%" : "—"}</td></tr>`).join("")}</tbody></table>
-      <p class="hint">One point per correct pick. Live — points land as each game goes final.</p>`
+        <td class="num">${r.decided ? Math.round(100 * r.total / r.decided) + "%" : "—"}</td></tr>
+        ${state.recapPlayer === r.id ? `<tr class="recaprow"><td colspan="5">${recapHtml(r.id)}</td></tr>` : ""}`).join("")}</tbody></table>
+      <p class="hint">One point per correct pick, live as games finish. Tap any player for their week.</p>`
     : `<p class="note"><b>Nobody has joined yet.</b><br>Share the link and the passcode.</p>`;
+}
+
+// One player's report card for the week on screen: hits, misses, and what's pending.
+function recapHtml(pid) {
+  const games = state.weekGames.get(state.week) || [];
+  const picks = new Map(state.picks.filter(p => p.player_id === pid && p.week === state.week).map(p => [p.game_id, p.team_id]));
+  const lines = [];
+  let pending = 0;
+  for (const g of games) {
+    const teamId = picks.get(g.id);
+    if (!teamId) continue;
+    const mine = g.home.id === teamId ? g.home : g.away;
+    const other = g.home.id === teamId ? g.away : g.home;
+    if (g.state === "post") {
+      lines.push(`<span class="${mine.winner ? "rgt" : "wrg"}">${mine.winner ? "✓" : "✗"}</span> ${esc(mine.name)} ${mine.winner ? "beat" : "lost to"} ${esc(other.name)} ${mine.score}–${other.score}`);
+    } else pending++;
+  }
+  return `${lines.length ? lines.join("<br>") : "No finished picks yet this week."}
+    ${pending ? `<div class="hint">${pending} pick${pending === 1 ? "" : "s"} still riding on games to come.</div>` : ""}`;
 }
 
 async function renderStandings() {
@@ -586,6 +607,14 @@ async function renderStandings() {
 
   $("#picbtn").onclick = () => $("#picfile").click();
   $("#picfile").onchange = uploadLeaguePhoto;
+
+  // Tap a standings row to unfold that player's week; tap again to fold it.
+  $("#standingsbox").onclick = e => {
+    const tr = e.target.closest("tr[data-pid]");
+    if (!tr) return;
+    state.recapPlayer = state.recapPlayer === tr.dataset.pid ? null : tr.dataset.pid;
+    $("#standingsbox").innerHTML = standingsHtml();
+  };
 
   // A public dice roll: it lands in the chat with your name on it, so a roll
   // can't be quietly redone until it looks better.
