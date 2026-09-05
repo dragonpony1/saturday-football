@@ -18,6 +18,7 @@ create table if not exists players (
   name text not null,
   last_seen timestamptz,
   last_via text, -- 'home screen' or 'browser', from the open-app ping
+  app_version text, -- app VERSION at their last open
   created_at timestamptz default now(),
   unique (league_id, name)
 );

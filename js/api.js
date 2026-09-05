@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY, SEASON } from "./config.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, SEASON, VERSION } from "./config.js";
 
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard";
 
@@ -150,7 +150,7 @@ export async function getOrCreatePlayer(name, leagueId) {
 export function touchPlayer(playerId, standalone) {
   return rest(`players?id=eq.${encodeURIComponent(playerId)}`, {
     method: "PATCH",
-    body: JSON.stringify({ last_seen: new Date().toISOString(), last_via: standalone ? "home screen" : "browser" }),
+    body: JSON.stringify({ last_seen: new Date().toISOString(), last_via: standalone ? "home screen" : "browser", app_version: VERSION }),
   });
 }
 
