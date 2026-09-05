@@ -1,4 +1,6 @@
-# Saturday Football — project guide
+# Mess With 'Em All — project guide
+
+The app is named "Mess With 'Em All"; the repo and folder keep the name saturday-football.
 
 Family college football schedule + pick'em league. Static site (GitHub Pages) + Supabase.
 The owner is newer to coding and often works from an iPad: keep changes small, explain what you changed in plain language, and don't introduce build tools or frameworks.

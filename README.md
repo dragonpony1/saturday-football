@@ -1,4 +1,6 @@
-# Saturday Football
+# Mess With 'Em All
+
+The family league app (formerly "Saturday Football" — the repo keeps that name).
 
 A family college football app: every week's FBS schedule with kickoff times and TV networks, plus a pick'em league where everyone picks the winner of every game before Thursday at noon. One point per correct pick.
 
