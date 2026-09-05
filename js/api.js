@@ -105,13 +105,16 @@ export async function getPlayerLeague(playerId) {
 // ---------- league photo ----------
 
 export async function uploadLeaguePic(leagueId, blob) {
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/league-pics/${encodeURIComponent(leagueId)}.jpg`, {
+  // A fresh filename every time — overwriting is blocked by storage rules,
+  // and unique names mean phones never show a stale cached photo.
+  const name = `${encodeURIComponent(leagueId)}-${Date.now()}.jpg`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/league-pics/${name}`, {
     method: "POST",
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, "Content-Type": "image/jpeg", "x-upsert": "true" },
+    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, "Content-Type": "image/jpeg" },
     body: blob,
   });
   if (!res.ok) throw new Error(`Storage ${res.status}: ${await res.text()}`);
-  return `${SUPABASE_URL}/storage/v1/object/public/league-pics/${encodeURIComponent(leagueId)}.jpg?v=${Date.now()}`;
+  return `${SUPABASE_URL}/storage/v1/object/public/league-pics/${name}`;
 }
 
 export function setLeaguePic(leagueId, url) {
