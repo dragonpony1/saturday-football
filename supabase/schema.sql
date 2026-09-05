@@ -16,6 +16,7 @@ create table if not exists players (
   id uuid primary key default gen_random_uuid(),
   league_id uuid not null references leagues(id),
   name text not null,
+  last_seen timestamptz,
   created_at timestamptz default now(),
   unique (league_id, name)
 );

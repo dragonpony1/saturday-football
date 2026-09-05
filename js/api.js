@@ -146,6 +146,13 @@ export async function getOrCreatePlayer(name, leagueId) {
   return created[0];
 }
 
+// Quiet "I was here" ping so the league can see who's been around.
+export function touchPlayer(playerId) {
+  return rest(`players?id=eq.${encodeURIComponent(playerId)}`, {
+    method: "PATCH", body: JSON.stringify({ last_seen: new Date().toISOString() }),
+  });
+}
+
 export function renamePlayer(playerId, name) {
   return rest(`players?id=eq.${encodeURIComponent(playerId)}`, {
     method: "PATCH", body: JSON.stringify({ name }),

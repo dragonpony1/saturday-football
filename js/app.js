@@ -24,6 +24,7 @@ const state = {
     state.calendar = Array.from({ length: 15 }, (_, i) => ({ value: i + 1, label: `Week ${i + 1}` }));
   }
   checkForUpdate(); setInterval(checkForUpdate, 5 * 60_000);
+  setTimeout(maybeInstallTip, 2000); // give the join greeting first claim on the banner
   setInterval(refreshChat, 30_000); // keep the league chat fresh while it's on screen
   setInterval(liveTick, 60_000);    // live scores + standings while the app is open
   const now = Date.now();
@@ -45,6 +46,7 @@ const state = {
       state.memberships.push({ league: state.league, player: state.player });
       localStorage.setItem("memberships", JSON.stringify(state.memberships));
     }
+    if (state.player) api.touchPlayer(state.player.id).catch(() => {});
     if (state.league) {
       // A league can be deleted or have settings changed behind the scenes.
       const fresh = await api.getLeagueById(state.league.id).catch(() => state.league);
@@ -93,6 +95,31 @@ async function checkForUpdate() {
 // Android lets us pop the real install prompt; grab it when the browser offers.
 let installPrompt = null;
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; });
+
+// A one-time nudge for people using the app in a plain browser tab.
+function maybeInstallTip() {
+  if (matchMedia("(display-mode: standalone)").matches || navigator.standalone) return;
+  if (localStorage.getItem("a2hs-done")) return;
+  const b = $("#banner");
+  if (b.textContent) return; // something more important is showing
+  const done = () => { localStorage.setItem("a2hs-done", "1"); b.textContent = ""; };
+  const tip = document.createElement("button");
+  tip.className = "linkbtn";
+  tip.textContent = "📲 Tip: put this app on your home screen — tap for how";
+  tip.onclick = () => {
+    done();
+    if (installPrompt) { installPrompt.prompt(); installPrompt = null; return; }
+    $("#modaltitle").textContent = state.league ? `Invite people to ${state.league.name}` : "Invite the family";
+    $("#modalcode").textContent = state.league?.passcode || LEAGUE_PASSCODE;
+    $("#sharemodal").hidden = false;
+    $("#a2hs").click(); // reveal the how-to steps right away
+  };
+  const no = document.createElement("button");
+  no.className = "linkbtn";
+  no.textContent = "no thanks";
+  no.onclick = done;
+  b.append(tip, " · ", no);
+}
 
 function bindNav() {
   // Already on the home screen? No need to offer it.
