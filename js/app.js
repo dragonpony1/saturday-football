@@ -231,7 +231,7 @@ function renderPicks(entry) {
     <span>${weekDone ? "This week is in the books." : "Each game locks at its kickoff."}</span>
     <span>${made} of ${board.length} picked${modeLabel}</span></div>`;
 
-  // Once a game is locked, everyone's picks are fair to show.
+  // Everyone's picks are public, before and after kickoff — league's choice.
   const nameOf = new Map(state.players.map(p => [p.id, p.name]));
   const byGame = new Map();
   for (const p of state.picks) {
@@ -276,7 +276,7 @@ function pickRow(g, picked, locked, famPicks) {
       <span class="score">${t.score ?? ""}</span></button>`;
   };
   let fam = "";
-  if (locked && famPicks) {
+  if (famPicks) {
     const side = t => { const names = famPicks.get(t.id); return names ? `<b>${esc(t.name)}:</b> ${esc(names.join(", "))}` : ""; };
     const parts = [side(g.away), side(g.home)].filter(Boolean);
     if (parts.length) fam = `<div class="fampicks">${parts.join("&ensp;")}</div>`;
@@ -441,7 +441,7 @@ function renderRules() {
       <li><b>1 point per correct pick.</b> Most points at the end of the season wins. Ties share the glory.</li>
       <li><b>Every game locks at its own kickoff.</b> Pick or change right up until the ball is in the air.</li>
       <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>
-      <li><b>Once a game locks, everyone's picks show</b> under it. No copying, all bragging.</li>
+      <li><b>Everyone's picks show under each game</b> — even before kickoff. Copy at your own risk; the scoreboard remembers who thought of it first.</li>
       <li><b>Standings</b> adds up the whole season. Games still being played don't count until they're final.</li>
       <li><b>New folks join</b> with the league passcode and their name — same name every time, so picks stay together.</li>
     </ul>
