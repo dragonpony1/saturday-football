@@ -529,6 +529,7 @@ function renderRules() {
       <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>
       <li><b>Everyone's picks show under each game</b> — even before kickoff. Copy at your own risk; the scoreboard remembers who thought of it first.</li>
       <li><b>The League tab</b> holds the standings and the league chat. Standings add up the whole season; games still being played don't count until they're final.</li>
+      <li><b>Tied?</b> The 🎲 tie-breaker button on the League tab posts a public roll (1–100) into the chat — highest roll wins, no take-backs.</li>
       <li><b>New folks join</b> with the league passcode and their name — same name every time, so picks stay together.</li>
     </ul>
   </div>`;
@@ -579,12 +580,21 @@ async function renderStandings() {
     <input type="file" id="picfile" accept="image/*" hidden></div>`;
 
   el.innerHTML = `${head}<div id="standingsbox"><p class="note">Adding up the season…</p></div>
-    <section class="chat"><h3>League chat</h3><div id="chatlist"><p class="hint">Loading…</p></div>
+    <section class="chat"><h3>League chat <button type="button" id="rollbtn" class="linkbtn">🎲 Tie-breaker roll</button></h3><div id="chatlist"><p class="hint">Loading…</p></div>
     <form id="chatform"><input name="body" maxlength="300" placeholder="Talk your talk…" autocomplete="off" required>
     <button type="submit">Send</button></form></section>`;
 
   $("#picbtn").onclick = () => $("#picfile").click();
   $("#picfile").onchange = uploadLeaguePhoto;
+
+  // A public dice roll: it lands in the chat with your name on it, so a roll
+  // can't be quietly redone until it looks better.
+  $("#rollbtn").onclick = async () => {
+    if (!confirm("Roll your tie-breaker number? It posts to the chat for everyone to see.")) return;
+    const n = 1 + (crypto.getRandomValues(new Uint32Array(1))[0] % 100);
+    try { await api.sendMessage(state.player.id, state.league.id, `🎲 rolled ${n} (tie-breaker)`); await refreshChat(true); }
+    catch (e) { $("#banner").textContent = "The roll didn't post. Try again."; console.error(e); }
+  };
 
   $("#chatform").onsubmit = async e => {
     e.preventDefault();
