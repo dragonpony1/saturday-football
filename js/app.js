@@ -23,6 +23,7 @@ const state = {
   } catch {
     state.calendar = Array.from({ length: 15 }, (_, i) => ({ value: i + 1, label: `Week ${i + 1}` }));
   }
+  checkForUpdate(); setInterval(checkForUpdate, 5 * 60_000);
   const now = Date.now();
   const cur = state.calendar.find(c => c.end && now >= c.start && now <= c.end)
            || state.calendar.find(c => c.end && now < c.end) || state.calendar[0];
@@ -54,6 +55,28 @@ const state = {
   }
   await loadWeek(state.week);
 })();
+
+// Nudge phones off stale cached copies: if the server has a newer version,
+// offer a one-tap refresh instead of waiting out the ~10-minute cache.
+async function checkForUpdate() {
+  try {
+    const text = await fetch("js/config.js", { cache: "no-store" }).then(r => r.text());
+    const m = text.match(/VERSION = "([^"]+)"/);
+    const b = $("#banner");
+    if (!m || m[1] === VERSION || b.textContent) return; // never clobber a real message
+    const btn = document.createElement("button");
+    btn.className = "linkbtn";
+    btn.textContent = `Update v${m[1]} is ready — tap to get it`;
+    btn.onclick = async () => {
+      try {
+        await Promise.all(["index.html", "js/config.js", "js/api.js", "js/app.js", "css/style.css"]
+          .map(u => fetch(u, { cache: "reload" })));
+      } catch {}
+      location.reload();
+    };
+    b.appendChild(btn);
+  } catch {} // offline or blocked: try again next interval
+}
 
 function bindNav() {
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
