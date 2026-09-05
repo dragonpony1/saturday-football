@@ -6,6 +6,7 @@ const state = {
   view: "schedule", week: null, calendar: [], games: [],
   player: JSON.parse(localStorage.getItem("player") || "null"),
   league: JSON.parse(localStorage.getItem("league") || "null"),
+  memberships: JSON.parse(localStorage.getItem("memberships") || "[]"), // every league joined on this device
   players: [], picks: [],           // picks: this league's picks this season
   weekGames: new Map(),             // week -> games (for standings)
   showFinished: false,              // My picks: finished games are tucked away by default
@@ -36,6 +37,11 @@ const state = {
         else { localStorage.removeItem("player"); state.player = null; } // player row is gone
       } catch (e) { showLeagueError(e); } // network blip: stay signed in, retry next open
     }
+    // Phones from before the league list existed: seed it with the current league.
+    if (state.player && state.league && !state.memberships.some(m => m.league.id === state.league.id)) {
+      state.memberships.push({ league: state.league, player: state.player });
+      localStorage.setItem("memberships", JSON.stringify(state.memberships));
+    }
     if (state.league) await loadLeague().catch(showLeagueError);
   }
   await loadWeek(state.week);
@@ -43,6 +49,7 @@ const state = {
 
 function bindNav() {
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
+  $("#who").onclick = () => { state.showJoin = true; setView("picks"); };
   $("#signout").onclick = () => {
     localStorage.removeItem("player"); localStorage.removeItem("league");
     state.player = null; state.league = null; state.players = []; state.picks = [];
@@ -128,7 +135,8 @@ function render() {
   else if (state.view === "picks") renderPicks(entry);
   else renderStandings();
   $("#signout").hidden = !state.player;
-  $("#who").textContent = state.player ? `${state.player.name} · ${state.league?.name || ""}` : "";
+  $("#who").hidden = !state.player;
+  $("#who").textContent = state.player ? `${state.player.name} · ${state.league?.name || ""} ▾` : "";
 }
 
 function renderSchedule() {
@@ -249,7 +257,12 @@ async function makePick(g, teamId) {
 }
 
 function renderJoin() {
+  // Leagues already joined on this device, minus the one currently on screen.
+  const mine = state.memberships.filter(m => !state.league || m.league.id !== state.league.id);
   $("#content").innerHTML = `${state.player && state.league ? `<p class="hint schedtip"><button type="button" class="linkbtn" id="backtoleague">← Back to ${esc(state.league.name)}</button></p>` : ""}
+  ${mine.length ? `<div class="join" id="myleagues"><h2>Your leagues</h2>
+    ${mine.map(m => `<button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.name)}<small>as ${esc(m.player.name)} — tap to switch</small></button>`).join("")}
+  </div>` : ""}
   <form class="join" id="join">
     <h2>Join a league</h2>
     <label>Your name<input name="name" required autocomplete="off" placeholder="Dad"></label>
@@ -269,6 +282,10 @@ function renderJoin() {
 
   const back = $("#backtoleague");
   if (back) back.onclick = () => { state.showJoin = false; render(); };
+  document.querySelectorAll(".leaguebtn").forEach(b => b.onclick = () => {
+    const m = state.memberships.find(x => x.league.id === b.dataset.league);
+    if (m) switchLeague(m);
+  });
   $("#showcreate").onclick = () => { $("#join").hidden = true; $("#create").hidden = false; };
 
   $("#join").onsubmit = async e => {
@@ -307,9 +324,23 @@ async function joinLeague(league, name) {
   state.player = player;
   localStorage.setItem("league", JSON.stringify(state.league));
   localStorage.setItem("player", JSON.stringify(state.player));
+  state.memberships = state.memberships.filter(m => m.league.id !== league.id);
+  state.memberships.push({ league: state.league, player: state.player });
+  localStorage.setItem("memberships", JSON.stringify(state.memberships));
   $("#banner").textContent = "";
   state.showJoin = false;
   await loadLeague(); render();
+}
+
+async function switchLeague(m) {
+  state.league = m.league; state.player = m.player;
+  localStorage.setItem("league", JSON.stringify(state.league));
+  localStorage.setItem("player", JSON.stringify(state.player));
+  state.players = []; state.picks = [];
+  $("#banner").textContent = "";
+  state.showJoin = false;
+  render();
+  await loadLeague().catch(showLeagueError); render();
 }
 
 const normCode = s => String(s).trim().toLowerCase();

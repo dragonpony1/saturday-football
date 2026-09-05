@@ -7,7 +7,7 @@ export const LEAGUE_PASSCODE = "touchdown";
 
 // Shown next to the time zone. Bump on every push so phones can confirm
 // they have the latest (old copies can linger ~10 minutes in caches).
-export const VERSION = "1.5";
+export const VERSION = "1.6";
 
 export const SEASON = 2026;
 
