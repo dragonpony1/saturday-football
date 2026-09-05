@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1E4B2E">
+<title>Saturday Football</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>Saturday Football</h1>
+    <span class="who"><span id="who"></span> <button id="signout" hidden>Sign out</button></span>
+  </div>
+  <nav class="tabs" aria-label="Section">
+    <button data-view="schedule" aria-pressed="true">Schedule</button>
+    <button data-view="picks" aria-pressed="false">My picks</button>
+    <button data-view="standings" aria-pressed="false">Standings</button>
+  </nav>
+  <nav class="weeks" id="weeks" aria-label="Week"></nav>
+</header>
+<main>
+  <div class="topline"><span id="range"></span><span class="tz" id="tz"></span></div>
+  <div id="banner" class="banner" role="status"></div>
+  <div id="content"></div>
+</main>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
