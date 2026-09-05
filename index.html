@@ -27,13 +27,14 @@
   <nav class="tabs" aria-label="Section">
     <button data-view="schedule" aria-pressed="true">Schedule</button>
     <button data-view="picks" aria-pressed="false">My picks</button>
-    <button data-view="standings" aria-pressed="false">Standings</button>
+    <button data-view="standings" aria-pressed="false">League</button>
     <button data-view="rules" aria-pressed="false">Rules</button>
   </nav>
   <nav class="weeks" id="weeks" aria-label="Week"></nav>
 </header>
 <main>
   <div class="topline"><span id="range"></span><span class="tz" id="tz"></span></div>
+  <div id="updatebar" class="banner updatebar" role="status"></div>
   <div id="banner" class="banner" role="status"></div>
   <div id="content"></div>
 </main>

@@ -24,6 +24,7 @@ const state = {
     state.calendar = Array.from({ length: 15 }, (_, i) => ({ value: i + 1, label: `Week ${i + 1}` }));
   }
   checkForUpdate(); setInterval(checkForUpdate, 5 * 60_000);
+  setInterval(refreshChat, 30_000); // keep the league chat fresh while it's on screen
   const now = Date.now();
   const cur = state.calendar.find(c => c.end && now >= c.start && now <= c.end)
            || state.calendar.find(c => c.end && now < c.end) || state.calendar[0];
@@ -58,15 +59,25 @@ const state = {
 
 // Nudge phones off stale cached copies: if the server has a newer version,
 // offer a one-tap refresh instead of waiting out the ~10-minute cache.
+// Lives in its own #updatebar so ordinary messages can never crowd it out.
 async function checkForUpdate() {
   try {
-    const text = await fetch("js/config.js", { cache: "no-store" }).then(r => r.text());
-    const m = text.match(/VERSION = "([^"]+)"/);
-    const b = $("#banner");
-    if (!m || m[1] === VERSION || b.textContent) return; // never clobber a real message
+    const res = await fetch("js/config.js", { cache: "no-store" });
+    if (!res.ok) return; // transient server hiccup: leave any showing prompt alone
+    const m = (await res.text()).match(/VERSION = "([^"]+)"/);
+    if (!m) return;
+    const bar = $("#updatebar");
+    if (m[1] === VERSION) { if (bar) bar.innerHTML = ""; return; }
+    const label = `Update v${m[1]} is ready — tap to get it`;
+    const showing = bar?.querySelector(".linkbtn");
+    if (showing) { showing.textContent = label; return; } // newer version shipped: refresh the label
+    // Mid-rollout, a stale page may not have #updatebar yet — fall back to the
+    // shared banner, but only if no other message is using it.
+    const target = bar || $("#banner");
+    if (!target || (!bar && target.textContent)) return;
     const btn = document.createElement("button");
     btn.className = "linkbtn";
-    btn.textContent = `Update v${m[1]} is ready — tap to get it`;
+    btn.textContent = label;
     btn.onclick = async () => {
       try {
         await Promise.all(["index.html", "js/config.js", "js/api.js", "js/app.js", "css/style.css"]
@@ -74,7 +85,7 @@ async function checkForUpdate() {
       } catch {}
       location.reload();
     };
-    b.appendChild(btn);
+    target.appendChild(btn);
   } catch {} // offline or blocked: try again next interval
 }
 
@@ -183,7 +194,7 @@ function render() {
   else renderStandings();
   $("#signout").hidden = !state.player;
   $("#who").hidden = !state.player;
-  $("#who").textContent = state.player ? `${state.player.name} · ${state.league?.name || ""} ▾` : "";
+  $("#who").textContent = state.player ? `${state.player.name} · ${state.league?.icon || "🏈"} ${state.league?.name || ""} ▾` : "";
 }
 
 function renderSchedule() {
@@ -208,9 +219,11 @@ function gameRow(g) {
 }
 
 function teamLine(t) {
-  return `<div class="team ${t.winner ? "win" : ""}"><span class="rank">${t.rank || ""}</span>
+  return `<div class="team ${t.winner ? "win" : ""}"><span class="rank">${t.rank || ""}</span>${logoImg(t)}
     <span class="name">${t.name}</span><span class="score">${t.score ?? ""}</span></div>`;
 }
+
+const logoImg = t => t.logo ? `<img class="tlogo" src="${t.logo}" alt="" loading="lazy" onerror="this.hidden=true">` : `<span class="tlogo"></span>`;
 
 // ---------- picks ----------
 
@@ -273,7 +286,7 @@ function pickRow(g, picked, locked, famPicks) {
     const isPick = picked === t.id;
     const result = g.state === "post" && isPick ? (t.winner ? "right" : "wrong") : "";
     return `<button class="pickbtn ${isPick ? "on" : ""} ${result}" data-team="${t.id}" ${locked ? "disabled" : ""}
-      aria-pressed="${isPick}"><span class="rank">${t.rank || ""}</span><span class="name">${t.name}</span>
+      aria-pressed="${isPick}"><span class="rank">${t.rank || ""}</span>${logoImg(t)}<span class="name">${t.name}</span>
       <span class="score">${t.score ?? ""}</span></button>`;
   };
   let fam = "";
@@ -309,7 +322,7 @@ function renderJoin() {
   const mine = state.memberships.filter(m => !state.league || m.league.id !== state.league.id);
   $("#content").innerHTML = `${state.player && state.league ? `<p class="hint schedtip"><button type="button" class="linkbtn" id="backtoleague">← Back to ${esc(state.league.name)}</button> &nbsp;·&nbsp; <button type="button" class="linkbtn" id="renameme">Change my name</button></p>` : ""}
   ${mine.length ? `<div class="join" id="myleagues"><h2>Your leagues</h2>
-    ${mine.map(m => `<button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.name)}<small>as ${esc(m.player.name)} — tap to switch</small></button>`).join("")}
+    ${mine.map(m => `<button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.icon || "🏈")} ${esc(m.league.name)}<small>as ${esc(m.player.name)} — tap to switch</small></button>`).join("")}
   </div>` : ""}
   <form class="join" id="join">
     <h2>Join a league</h2>
@@ -322,6 +335,7 @@ function renderJoin() {
   <form class="join" id="create" hidden>
     <h2>Start a new league</h2>
     <label>League name<input name="lname" required autocomplete="off" placeholder="The Smith Family"></label>
+    <label>League emoji (optional)<input name="icon" maxlength="12" autocomplete="off" placeholder="🏈"></label>
     <label>Make up a passcode<input name="code" required autocomplete="off" placeholder="something easy to text"></label>
     <label>Your name<input name="name" required autocomplete="off"></label>
     <label>Games to pick<select name="mode">
@@ -380,7 +394,7 @@ function renderJoin() {
     const name = f.get("name").trim();
     if (code.length < 4) { $("#banner").textContent = "Make the passcode at least 4 characters."; return; }
     try {
-      const league = await api.createLeague(lname, code, f.get("mode") || "all");
+      const league = await api.createLeague(lname, code, f.get("mode") || "all", iconTrim((f.get("icon") || "").trim()) || "🏈");
       await joinLeague(league, name);
     } catch (err) {
       if (String(err.message).includes("409")) $("#banner").textContent = "A league already uses that passcode. If you just created it, reload and use Join with the same passcode — otherwise make up a different one.";
@@ -417,7 +431,7 @@ async function switchLeague(m) {
 
 // Make this the active league and keep localStorage + the memberships list current.
 function rememberLeague(league) {
-  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all" };
+  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all", icon: league.icon || "🏈" };
   localStorage.setItem("league", JSON.stringify(state.league));
   state.memberships = state.memberships.map(m => m.league.id === league.id ? { ...m, league: state.league } : m);
   localStorage.setItem("memberships", JSON.stringify(state.memberships));
@@ -435,6 +449,14 @@ function dropDeadLeague(leagueId) {
 }
 
 const normCode = s => String(s).trim().toLowerCase();
+
+// Cap an icon at 3 visible characters without slicing an emoji in half.
+function iconTrim(s) {
+  try {
+    return [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(s)]
+      .slice(0, 3).map(x => x.segment).join("");
+  } catch { return s.slice(0, 4); }
+}
 
 // ESPN conference ids for the main conferences: ACC, Big 12, Big Ten, SEC, Pac-12, Mountain West.
 const MAIN_CONFS = new Set(["1", "4", "5", "8", "9", "17"]);
@@ -461,7 +483,7 @@ function renderRules() {
       <li><b>Every game locks at its own kickoff.</b> Pick or change right up until the ball is in the air.</li>
       <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>
       <li><b>Everyone's picks show under each game</b> — even before kickoff. Copy at your own risk; the scoreboard remembers who thought of it first.</li>
-      <li><b>Standings</b> adds up the whole season. Games still being played don't count until they're final.</li>
+      <li><b>The League tab</b> holds the standings and the league chat. Standings add up the whole season; games still being played don't count until they're final.</li>
       <li><b>New folks join</b> with the league passcode and their name — same name every time, so picks stay together.</li>
     </ul>
   </div>`;
@@ -499,14 +521,59 @@ async function renderStandings() {
     return { name: pl.name, total, decided, byWeek, thisWeek: byWeek[state.week] };
   }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
-  if (!rows.length) { el.innerHTML = `<p class="note"><b>Nobody has joined yet.</b><br>Share the link and the passcode.</p>`; return; }
+  const head = `<div class="leaguehead"><span class="licon">${esc(state.league.icon || "🏈")}</span>
+    <h2>${esc(state.league.name)}</h2></div>`;
 
-  el.innerHTML = `<table class="standings"><thead><tr><th></th><th>Player</th><th>Season</th><th>This week</th><th>Hit rate</th></tr></thead>
-    <tbody>${rows.map((r, i) => `<tr class="${state.player && r.name === state.player.name ? "me" : ""}">
-      <td class="pos">${i + 1}</td><td>${esc(r.name)}</td><td class="num big">${r.total}</td>
-      <td class="num">${r.thisWeek ? `${r.thisWeek.right} / ${r.thisWeek.played}` : "—"}</td>
-      <td class="num">${r.decided ? Math.round(100 * r.total / r.decided) + "%" : "—"}</td></tr>`).join("")}</tbody></table>
-    <p class="hint">One point per correct pick. Games that haven't finished don't count yet.</p>`;
+  const table = rows.length
+    ? `<table class="standings"><thead><tr><th></th><th>Player</th><th>Season</th><th>This week</th><th>Hit rate</th></tr></thead>
+      <tbody>${rows.map((r, i) => `<tr class="${state.player && r.name === state.player.name ? "me" : ""}">
+        <td class="pos">${i + 1}</td><td>${esc(r.name)}</td><td class="num big">${r.total}</td>
+        <td class="num">${r.thisWeek ? `${r.thisWeek.right} / ${r.thisWeek.played}` : "—"}</td>
+        <td class="num">${r.decided ? Math.round(100 * r.total / r.decided) + "%" : "—"}</td></tr>`).join("")}</tbody></table>
+      <p class="hint">One point per correct pick. Games that haven't finished don't count yet.</p>`
+    : `<p class="note"><b>Nobody has joined yet.</b><br>Share the link and the passcode.</p>`;
+
+  el.innerHTML = `${head}${table}
+    <section class="chat"><h3>League chat</h3><div id="chatlist"><p class="hint">Loading…</p></div>
+    <form id="chatform"><input name="body" maxlength="300" placeholder="Talk your talk…" autocomplete="off" required>
+    <button type="submit">Send</button></form></section>`;
+
+  $("#chatform").onsubmit = async e => {
+    e.preventDefault();
+    const input = e.target.body;
+    const body = input.value.trim();
+    if (!body) return;
+    try {
+      await api.sendMessage(state.player.id, state.league.id, body);
+      input.value = ""; // only clear once the message actually made it
+      await refreshChat(true);
+    } catch (err) { $("#banner").textContent = "That message didn't send. Try again."; console.error(err); }
+  };
+  refreshChat(true);
+}
+
+// Reload the chat list in place (no full re-render). Overlapping calls and
+// league switches are guarded by a token so a stale response never paints.
+let chatReq = 0;
+async function refreshChat(scrollDown = false) {
+  if (!state.league || state.view !== "standings") return;
+  const leagueId = state.league.id;
+  const token = ++chatReq;
+  try {
+    const msgs = await api.listMessages(leagueId);
+    if (token !== chatReq || state.league?.id !== leagueId || state.view !== "standings") return;
+    const el = $("#chatlist");
+    if (!el) return;
+    const key = `${msgs.length}:${msgs[msgs.length - 1]?.created_at || ""}`;
+    if (el.dataset.key === key && !scrollDown) return; // nothing new: don't disturb the reader
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    el.innerHTML = msgs.length
+      ? msgs.map(m => `<p class="msg"><b>${esc(m.players?.name || "?")}</b> ${esc(m.body)}
+          <span class="mtime">${new Date(m.created_at).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}</span></p>`).join("")
+      : `<p class="hint">No messages yet — start the trash talk.</p>`;
+    el.dataset.key = key;
+    if (scrollDown || nearBottom) el.scrollTop = el.scrollHeight;
+  } catch (e) { console.error(e); }
 }
 
 // ---------- helpers ----------

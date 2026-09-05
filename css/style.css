@@ -80,6 +80,23 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .join .linkbtn { background: none; color: var(--field); font: inherit; font-weight: 600; padding: 0; width: auto; border-radius: 0; }
 .leaguebtn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; background: var(--chalk); border: 1.5px solid var(--field); color: var(--field); border-radius: 6px; padding: 10px 12px; font: 600 17px "Source Sans 3", sans-serif; cursor: pointer; text-align: left; }
 .leaguebtn small { font: 400 13px "Source Sans 3", sans-serif; color: var(--mute); }
+.tlogo { width: 22px; height: 22px; object-fit: contain; flex: 0 0 22px; }
+.updatebar { background: #e8effc; border-left-color: var(--field); font-weight: 600; }
+
+.leaguehead { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.leaguehead .licon { font-size: 32px; line-height: 1; }
+.leaguehead h2 { font: 500 26px Oswald, sans-serif; color: var(--field); margin: 0; }
+
+.chat { background: var(--card); border-radius: 8px; padding: 14px; margin-top: 16px; }
+.chat h3 { font: 500 20px Oswald, sans-serif; color: var(--field); margin: 0 0 8px; }
+#chatlist { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+.msg { margin: 0; font-size: 15px; }
+.msg b { color: var(--field); }
+.msg .mtime { color: var(--mute); font-size: 12px; margin-left: 6px; }
+#chatform { display: flex; gap: 8px; }
+#chatform input { flex: 1; font: 16px "Source Sans 3", sans-serif; padding: 9px 10px; border: 1.5px solid var(--rule); border-radius: 6px; min-width: 0; }
+#chatform button { background: var(--field); color: var(--chalk); border: 0; border-radius: 6px; padding: 0 18px; font: 500 16px Oswald, sans-serif; cursor: pointer; }
+
 .rules { max-width: 520px; }
 .rules ul { margin: 0; padding-left: 20px; }
 .rules li { margin: 10px 0; }
