@@ -1,6 +1,6 @@
 :root {
-  --field: #1E4B2E; --field-deep: #143621; --chalk: #F5F3EC; --line: #E9C84A;
-  --ink: #1B2620; --mute: #6E7D74; --rule: #D9D6CC; --card: #FFFFFF; --live: #C8352E; --good: #2C7A3F;
+  --field: #1D428A; --field-deep: #12295C; --chalk: #F4F4F1; --line: #C8102E;
+  --ink: #1B2026; --mute: #6E7680; --rule: #D8D7D2; --card: #FFFFFF; --live: #C8352E; --good: #2C7A3F;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--chalk); color: var(--ink); font: 16px/1.4 "Source Sans 3", system-ui, sans-serif; }
@@ -12,7 +12,7 @@ header { background: var(--field); color: var(--chalk); padding: 18px 16px 0; po
 .brand { display: flex; align-items: baseline; justify-content: space-between; }
 h1 { font: 600 28px/1 Oswald, sans-serif; letter-spacing: .5px; margin: 0; }
 .who { font-size: 14px; opacity: .9; }
-.who button { background: none; border: 0; color: var(--line); cursor: pointer; font-size: 13px; padding: 0 0 0 6px; }
+.who button { background: none; border: 0; color: var(--chalk); text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0 0 0 6px; }
 
 .tabs { display: flex; gap: 4px; margin-top: 14px; }
 .tabs button { background: none; border: 0; color: var(--chalk); font: 500 17px Oswald, sans-serif; letter-spacing: .4px; padding: 8px 12px 10px; cursor: pointer; opacity: .7; border-bottom: 3px solid transparent; }
@@ -21,7 +21,7 @@ h1 { font: 600 28px/1 Oswald, sans-serif; letter-spacing: .5px; margin: 0; }
 .weeks { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 12px; scrollbar-width: none; }
 .weeks::-webkit-scrollbar { display: none; }
 .weeks button { flex: 0 0 auto; background: transparent; border: 1px solid rgba(245,243,236,.35); color: var(--chalk); border-radius: 999px; padding: 5px 13px; font: 500 15px Oswald, sans-serif; cursor: pointer; }
-.weeks button[aria-pressed=true] { background: var(--line); border-color: var(--line); color: var(--field-deep); }
+.weeks button[aria-pressed=true] { background: var(--line); border-color: var(--line); color: #fff; }
 
 main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .topline { display: flex; justify-content: space-between; color: var(--mute); font-size: 14px; }
@@ -46,7 +46,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .status.live { color: var(--live); font-weight: 600; }
 
 /* picks */
-.lockbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding: 10px 14px; background: #fff8dd; border: 1px solid var(--line); border-radius: 6px; font-weight: 600; }
+.lockbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding: 10px 14px; background: #fdeeee; border: 1px solid var(--line); border-radius: 6px; font-weight: 600; }
 .lockbar.locked { background: #eee; border-color: var(--rule); color: var(--mute); }
 .pickpair { display: flex; flex-direction: column; gap: 4px; }
 .pickbtn { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: var(--chalk); border: 1.5px solid var(--rule); border-radius: 6px; padding: 7px 10px; font-size: 17px; cursor: pointer; color: var(--ink); }
@@ -67,7 +67,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .standings { width: 100%; border-collapse: collapse; margin-top: 14px; background: var(--card); border-radius: 8px; overflow: hidden; }
 .standings th { text-align: left; font: 500 15px Oswald, sans-serif; color: var(--mute); padding: 10px 12px; border-bottom: 2px solid var(--rule); }
 .standings td { padding: 12px; border-bottom: 1px solid var(--rule); font-size: 17px; }
-.standings tr.me td { background: #fff8dd; }
+.standings tr.me td { background: #eaf0fb; }
 .standings .pos { color: var(--mute); width: 30px; font: 500 15px Oswald, sans-serif; }
 .standings .num { text-align: right; font-family: Oswald, sans-serif; }
 .standings .num.big { font-size: 22px; color: var(--field); }

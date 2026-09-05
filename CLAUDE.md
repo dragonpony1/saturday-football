@@ -10,7 +10,7 @@ The owner is newer to coding and often works from an iPad: keep changes small, e
 - `js/config.js` — Supabase URL + anon key, league passcode, season, lock time. The only file with settings.
 - `js/api.js` — all data access. ESPN scoreboard fetch/parse, lock-time math, Supabase REST calls (plain `fetch`, no SDK).
 - `js/app.js` — state and rendering for the three views.
-- `css/style.css` — styles. Palette: field green `--field`, chalk `--chalk`, gold `--line`.
+- `css/style.css` — styles. Palette: deep blue `--field`, chalk `--chalk`, crimson `--line` (red-and-blue theme, Big 12 country).
 - `supabase/schema.sql` — tables `players` and `picks`, with open RLS policies.
 
 ## Rules of the league (don't change without asking)
