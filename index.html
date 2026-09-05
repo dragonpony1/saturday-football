@@ -36,6 +36,16 @@
   <div id="banner" class="banner" role="status"></div>
   <div id="content"></div>
 </main>
+<div id="sharemodal" class="modal" hidden>
+  <div class="modalcard">
+    <h2>Invite the family</h2>
+    <img src="qr.png" alt="QR code that opens the league" class="qr">
+    <p class="hint">Scan it with a phone camera, or send it by text.</p>
+    <p class="code">Passcode: <b id="modalcode"></b></p>
+    <button id="sendinvite">Send invite</button>
+    <button id="closemodal" class="linkbtn">Close</button>
+  </div>
+</div>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

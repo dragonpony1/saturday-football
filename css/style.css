@@ -58,6 +58,21 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .pickbtn.on.right { background: var(--good); border-color: var(--good); }
 .pickbtn.on.wrong { background: var(--live); border-color: var(--live); }
 
+.fampicks { grid-column: 1 / -1; font-size: 13px; color: var(--mute); border-top: 1px dashed var(--rule); padding-top: 6px; margin-top: 2px; }
+.fampicks b { color: var(--ink); font-weight: 600; }
+
+/* share modal */
+.modal { position: fixed; inset: 0; background: rgba(18,41,92,.55); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+.modal[hidden] { display: none; }
+.modalcard { background: #fff; border-radius: 12px; padding: 22px; max-width: 340px; width: 100%; text-align: center; }
+.modalcard h2 { font: 500 24px Oswald, sans-serif; margin: 0 0 10px; color: var(--field); }
+.modalcard .qr { width: 100%; max-width: 250px; }
+.modalcard .hint { margin: 4px 0 0; }
+.modalcard .code { font-size: 18px; margin: 10px 0 14px; }
+.modalcard .code b { color: var(--line); }
+#sendinvite { width: 100%; background: var(--field); color: var(--chalk); border: 0; border-radius: 6px; padding: 11px; font: 500 18px Oswald, sans-serif; cursor: pointer; }
+.linkbtn { background: none; border: 0; color: var(--mute); text-decoration: underline; margin-top: 10px; cursor: pointer; font-size: 14px; }
+
 .join { background: var(--card); border-radius: 8px; padding: 20px; max-width: 380px; margin: 30px auto; display: flex; flex-direction: column; gap: 12px; }
 .join h2 { font: 500 24px Oswald, sans-serif; margin: 0; color: var(--field); }
 .join label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }

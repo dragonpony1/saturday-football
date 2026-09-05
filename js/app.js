@@ -1,4 +1,4 @@
-import { LEAGUE_PASSCODE } from "./config.js";
+import { LEAGUE_PASSCODE, VERSION } from "./config.js";
 import * as api from "./api.js";
 
 const $ = s => document.querySelector(s);
@@ -12,7 +12,7 @@ const state = {
 // ---------- boot ----------
 
 (async function boot() {
-  $("#tz").textContent = Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, " ");
+  $("#tz").textContent = `v${VERSION} · ` + Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, " ");
   bindNav();
   try {
     state.calendar = await api.fetchCalendar();
@@ -31,7 +31,10 @@ const state = {
 function bindNav() {
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
   $("#signout").onclick = () => { localStorage.removeItem("player"); state.player = null; render(); };
-  $("#share").onclick = shareInvite;
+  $("#share").onclick = () => { $("#modalcode").textContent = LEAGUE_PASSCODE; $("#sharemodal").hidden = false; };
+  $("#sendinvite").onclick = shareInvite;
+  $("#closemodal").onclick = () => { $("#sharemodal").hidden = true; };
+  $("#sharemodal").onclick = e => { if (e.target.id === "sharemodal") $("#sharemodal").hidden = true; };
 }
 
 async function shareInvite() {
@@ -40,6 +43,7 @@ async function shareInvite() {
     await navigator.share({ text });
   } catch (e) {
     if (e.name === "AbortError") return;
+    $("#sharemodal").hidden = true;
     try {
       await navigator.clipboard.writeText(text);
       $("#banner").textContent = "Invite copied — paste it into a text to the family.";
@@ -145,15 +149,24 @@ function renderPicks(entry) {
     <span>${locked ? "Picks are locked for this week." : `Picks lock ${fmtDateTime(lock)}.`}</span>
     <span>${made} of ${state.games.length} picked</span></div>`;
 
+  // Once a game is locked, everyone's picks are fair to show.
+  const nameOf = new Map(state.players.map(p => [p.id, p.name]));
+  const byGame = new Map();
+  for (const p of state.picks) {
+    if (p.week !== state.week) continue;
+    const m = byGame.get(p.game_id) || byGame.set(p.game_id, new Map()).get(p.game_id);
+    (m.get(p.team_id) || m.set(p.team_id, []).get(p.team_id)).push(nameOf.get(p.player_id) || "?");
+  }
+
   groupByKickoff(state.games).forEach(gs => {
     const sec = document.createElement("section"); sec.className = "slot";
     sec.innerHTML = `<h2>${slotLabel(gs[0])}<small>${gs[0].tbd ? "" : dayLabel(gs[0])}</small></h2>`;
-    gs.forEach(g => sec.appendChild(pickRow(g, mine.get(g.id), api.isGameLocked(g, lock))));
+    gs.forEach(g => sec.appendChild(pickRow(g, mine.get(g.id), api.isGameLocked(g, lock), byGame.get(g.id))));
     el.appendChild(sec);
   });
 }
 
-function pickRow(g, picked, locked) {
+function pickRow(g, picked, locked, famPicks) {
   const el = document.createElement("article");
   el.className = `game pick ${g.state}`;
   const btn = t => {
@@ -163,9 +176,15 @@ function pickRow(g, picked, locked) {
       aria-pressed="${isPick}"><span class="rank">${t.rank || ""}</span><span class="name">${t.name}</span>
       <span class="score">${t.score ?? ""}</span></button>`;
   };
+  let fam = "";
+  if (locked && famPicks) {
+    const side = t => { const names = famPicks.get(t.id); return names ? `<b>${esc(t.name)}:</b> ${esc(names.join(", "))}` : ""; };
+    const parts = [side(g.away), side(g.home)].filter(Boolean);
+    if (parts.length) fam = `<div class="fampicks">${parts.join("&ensp;")}</div>`;
+  }
   el.innerHTML = `<div class="pickpair">${btn(g.away)}${btn(g.home)}</div>
     <div class="meta"><span class="tv">${g.tv}</span>
-    ${g.state !== "pre" ? `<span class="status ${g.state === "in" ? "live" : ""}">${g.detail}</span>` : `<span class="status">${locked ? "Locked" : ""}</span>`}</div>`;
+    ${g.state !== "pre" ? `<span class="status ${g.state === "in" ? "live" : ""}">${g.detail}</span>` : `<span class="status">${locked ? "Locked" : ""}</span>`}</div>${fam}`;
   el.querySelectorAll(".pickbtn").forEach(b => b.onclick = () => makePick(g, b.dataset.team));
   return el;
 }
@@ -249,6 +268,7 @@ function groupByKickoff(games) {
   }
   return [...groups.values()];
 }
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fmtDate = d => new Date(d).toLocaleDateString([], { month: "short", day: "numeric" });
 const fmtDateTime = d => d.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const slotLabel = g => g.tbd ? "Time to be announced" : g.date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
