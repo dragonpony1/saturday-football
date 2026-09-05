@@ -14,7 +14,7 @@ The owner is newer to coding and often works from an iPad: keep changes small, e
 - `supabase/schema.sql` — tables `players` and `picks`, with open RLS policies.
 
 ## Rules of the league (don't change without asking)
-- Every FBS game is picked, 1 point per correct pick.
+- Each league picks the games on its board (`leagues.pick_mode`: `all` FBS games, `ranked` matchups, or `big12ranked` = Big 12 teams + ranked), 1 point per correct pick.
 - Picks lock Thursday 12:00 in `America/Denver`; games that kick off earlier lock at kickoff.
 - Player identity is just a name + shared passcode. It's a family app, not a secure one.
 

@@ -32,6 +32,7 @@ function parseGames(json) {
       name: t.team.shortDisplayName || t.team.displayName,
       full: t.team.displayName,
       rank: t.curatedRank && t.curatedRank.current <= 25 ? t.curatedRank.current : null,
+      conf: t.team.conferenceId,     // ESPN conference id; Big 12 is "4"
       score: t.score,
       winner: !!t.winner,
     });
@@ -99,25 +100,25 @@ export function isConfigured() {
 }
 
 export async function getLeagueById(id) {
-  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode`);
+  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode,pick_mode`);
   return rows[0] || null;
 }
 
 export async function getLeague(passcode) {
-  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode`);
+  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode,pick_mode`);
   return rows[0] || null;
 }
 
-export async function createLeague(name, passcode) {
+export async function createLeague(name, passcode, pickMode) {
   const created = await rest("leagues", {
-    method: "POST", body: JSON.stringify({ name, passcode }), headers: { Prefer: "return=representation" },
+    method: "POST", body: JSON.stringify({ name, passcode, pick_mode: pickMode }), headers: { Prefer: "return=representation" },
   });
   return created[0];
 }
 
 // For players saved on a phone before leagues existed: look up which league they're in.
 export async function getPlayerLeague(playerId) {
-  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode)`);
+  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode,pick_mode)`);
   return rows[0]?.leagues || null;
 }
 

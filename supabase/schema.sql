@@ -6,6 +6,7 @@ create table if not exists leagues (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   passcode text not null unique,
+  pick_mode text not null default 'all', -- all | ranked | big12ranked
   created_at timestamptz default now()
 );
 

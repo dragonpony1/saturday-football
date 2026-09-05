@@ -43,10 +43,13 @@ const state = {
       localStorage.setItem("memberships", JSON.stringify(state.memberships));
     }
     if (state.league) {
-      // A league can be deleted behind the scenes — drop it cleanly if so.
-      const ok = await api.getLeagueById(state.league.id).catch(() => state.league);
-      if (ok) await loadLeague().catch(showLeagueError);
-      else dropDeadLeague(state.league.id);
+      // A league can be deleted or have settings changed behind the scenes.
+      const fresh = await api.getLeagueById(state.league.id).catch(() => state.league);
+      if (!fresh) dropDeadLeague(state.league.id);
+      else {
+        if (fresh !== state.league) rememberLeague(fresh);
+        await loadLeague().catch(showLeagueError);
+      }
     }
   }
   await loadWeek(state.week);
@@ -184,11 +187,13 @@ function renderPicks(entry) {
   const lock = api.lockTimeFor(entry);
   const mine = new Map(state.picks.filter(p => p.player_id === state.player.id && p.week === state.week).map(p => [p.game_id, p.team_id]));
   const locked = Date.now() >= lock;
-  const made = state.games.filter(g => mine.has(g.id)).length;
+  const board = state.games.filter(g => onBoard(g, state.league.pick_mode));
+  const made = board.filter(g => mine.has(g.id)).length;
+  const modeLabel = { big12ranked: " · Big 12 + ranked", ranked: " · ranked matchups only" }[state.league.pick_mode] || "";
 
   el.innerHTML = `<div class="lockbar ${locked ? "locked" : ""}">
     <span>${locked ? "Picks are locked for this week." : `Picks lock ${fmtDateTime(lock)}.`}</span>
-    <span>${made} of ${state.games.length} picked</span></div>`;
+    <span>${made} of ${board.length} picked${modeLabel}</span></div>`;
 
   // Once a game is locked, everyone's picks are fair to show.
   const nameOf = new Map(state.players.map(p => [p.id, p.name]));
@@ -199,8 +204,8 @@ function renderPicks(entry) {
     (m.get(p.team_id) || m.set(p.team_id, []).get(p.team_id)).push(nameOf.get(p.player_id) || "?");
   }
 
-  const visible = state.showFinished ? state.games : state.games.filter(g => g.state !== "post");
-  const hidden = state.games.length - visible.length;
+  const visible = state.showFinished ? board : board.filter(g => g.state !== "post");
+  const hidden = board.length - visible.length;
 
   groupByKickoff(visible).forEach(gs => {
     const sec = document.createElement("section"); sec.className = "slot";
@@ -282,6 +287,11 @@ function renderJoin() {
     <label>League name<input name="lname" required autocomplete="off" placeholder="The Smith Family"></label>
     <label>Make up a passcode<input name="code" required autocomplete="off" placeholder="something easy to text"></label>
     <label>Your name<input name="name" required autocomplete="off"></label>
+    <label>Games to pick<select name="mode">
+      <option value="big12ranked">Big 12 + ranked matchups (about 25 a week)</option>
+      <option value="ranked">Ranked matchups only (about 20 a week)</option>
+      <option value="all">Every FBS game (about 100 a week)</option>
+    </select></label>
     <button type="submit">Create league</button>
     <p class="hint">Only people you give the passcode can get in. You're the first member.</p>
   </form>`;
@@ -314,7 +324,7 @@ function renderJoin() {
     const name = f.get("name").trim();
     if (code.length < 4) { $("#banner").textContent = "Make the passcode at least 4 characters."; return; }
     try {
-      const league = await api.createLeague(lname, code);
+      const league = await api.createLeague(lname, code, f.get("mode") || "all");
       await joinLeague(league, name);
     } catch (err) {
       if (String(err.message).includes("409")) $("#banner").textContent = "A league already uses that passcode. If you just created it, reload and use Join with the same passcode — otherwise make up a different one.";
@@ -326,29 +336,35 @@ function renderJoin() {
 async function joinLeague(league, name) {
   // Create the player first, so nothing is saved locally unless the join fully worked.
   const player = await api.getOrCreatePlayer(name, league.id);
-  state.league = { id: league.id, name: league.name, passcode: league.passcode };
   state.player = player;
-  localStorage.setItem("league", JSON.stringify(state.league));
   localStorage.setItem("player", JSON.stringify(state.player));
   state.memberships = state.memberships.filter(m => m.league.id !== league.id);
-  state.memberships.push({ league: state.league, player: state.player });
-  localStorage.setItem("memberships", JSON.stringify(state.memberships));
+  state.memberships.push({ league, player });
+  rememberLeague(league);
   $("#banner").textContent = "";
   state.showJoin = false;
   await loadLeague(); render();
 }
 
 async function switchLeague(m) {
-  const ok = await api.getLeagueById(m.league.id).catch(() => m.league);
-  if (!ok) return dropDeadLeague(m.league.id);
-  state.league = m.league; state.player = m.player;
-  localStorage.setItem("league", JSON.stringify(state.league));
+  const fresh = await api.getLeagueById(m.league.id).catch(() => m.league);
+  if (!fresh) return dropDeadLeague(m.league.id);
+  state.player = m.player;
   localStorage.setItem("player", JSON.stringify(state.player));
+  rememberLeague(fresh);
   state.players = []; state.picks = [];
   $("#banner").textContent = "";
   state.showJoin = false;
   render();
   await loadLeague().catch(showLeagueError); render();
+}
+
+// Make this the active league and keep localStorage + the memberships list current.
+function rememberLeague(league) {
+  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all" };
+  localStorage.setItem("league", JSON.stringify(state.league));
+  state.memberships = state.memberships.map(m => m.league.id === league.id ? { ...m, league: state.league } : m);
+  localStorage.setItem("memberships", JSON.stringify(state.memberships));
 }
 
 function dropDeadLeague(leagueId) {
@@ -364,13 +380,20 @@ function dropDeadLeague(leagueId) {
 
 const normCode = s => String(s).trim().toLowerCase();
 
+// Which games a league picks: its whole board, ranked matchups, or Big 12 + ranked.
+function onBoard(g, mode) {
+  if (mode === "ranked") return !!(g.home.rank || g.away.rank);
+  if (mode === "big12ranked") return !!(g.home.rank || g.away.rank || g.home.conf === "4" || g.away.conf === "4");
+  return true;
+}
+
 // ---------- rules ----------
 
 function renderRules() {
   $("#content").innerHTML = `<div class="join rules">
     <h2>Rules &amp; scoring</h2>
     <ul>
-      <li><b>Pick every game.</b> On the My picks tab, tap the team you think wins. Tap-and-done — it saves by itself.</li>
+      <li><b>Pick every game on your league's board.</b> Some leagues pick every FBS game, some just the ranked matchups — My picks shows yours. Tap the team you think wins; it saves by itself.</li>
       <li><b>1 point per correct pick.</b> Most points at the end of the season wins. Ties share the glory.</li>
       <li><b>Picks lock Thursday at noon</b> (Mountain time) each week. Games that kick off before then lock at their kickoff instead.</li>
       <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>
