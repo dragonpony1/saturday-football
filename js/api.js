@@ -110,6 +110,12 @@ export async function getOrCreatePlayer(name, leagueId) {
   return created[0];
 }
 
+export function renamePlayer(playerId, name) {
+  return rest(`players?id=eq.${encodeURIComponent(playerId)}`, {
+    method: "PATCH", body: JSON.stringify({ name }),
+  });
+}
+
 export function listPlayers(leagueId) {
   return rest(`players?league_id=eq.${encodeURIComponent(leagueId)}&select=id,name&order=name`);
 }

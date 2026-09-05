@@ -306,7 +306,7 @@ async function makePick(g, teamId) {
 function renderJoin() {
   // Leagues already joined on this device, minus the one currently on screen.
   const mine = state.memberships.filter(m => !state.league || m.league.id !== state.league.id);
-  $("#content").innerHTML = `${state.player && state.league ? `<p class="hint schedtip"><button type="button" class="linkbtn" id="backtoleague">← Back to ${esc(state.league.name)}</button></p>` : ""}
+  $("#content").innerHTML = `${state.player && state.league ? `<p class="hint schedtip"><button type="button" class="linkbtn" id="backtoleague">← Back to ${esc(state.league.name)}</button> &nbsp;·&nbsp; <button type="button" class="linkbtn" id="renameme">Change my name</button></p>` : ""}
   ${mine.length ? `<div class="join" id="myleagues"><h2>Your leagues</h2>
     ${mine.map(m => `<button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.name)}<small>as ${esc(m.player.name)} — tap to switch</small></button>`).join("")}
   </div>` : ""}
@@ -335,6 +335,24 @@ function renderJoin() {
 
   const back = $("#backtoleague");
   if (back) back.onclick = () => { state.showJoin = false; render(); };
+  const rn = $("#renameme");
+  if (rn) rn.onclick = async () => {
+    const name = (prompt(`What should your name be in ${state.league.name}?`, state.player.name) || "").trim();
+    if (!name || name === state.player.name) return;
+    try {
+      await api.renamePlayer(state.player.id, name);
+      state.player = { ...state.player, name };
+      localStorage.setItem("player", JSON.stringify(state.player));
+      state.memberships = state.memberships.map(m => m.league.id === state.league.id ? { ...m, player: state.player } : m);
+      localStorage.setItem("memberships", JSON.stringify(state.memberships));
+      state.showJoin = false;
+      await loadLeague(); render();
+      $("#banner").textContent = `Done — you're ${name} now. Your picks came along.`;
+    } catch (e) {
+      if (String(e.message).includes("409")) $("#banner").textContent = "That name's already taken in this league — pick a different one.";
+      else showLeagueError(e);
+    }
+  };
   document.querySelectorAll(".leaguebtn").forEach(b => b.onclick = () => {
     const m = state.memberships.find(x => x.league.id === b.dataset.league);
     if (m) switchLeague(m);

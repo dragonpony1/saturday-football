@@ -38,8 +38,9 @@ alter table picks enable row level security;
 create policy "anyone can find a league"  on leagues for select using (true);
 create policy "anyone can start a league" on leagues for insert with check (true);
 
-create policy "family can read players" on players for select using (true);
-create policy "family can add players"  on players for insert with check (true);
+create policy "family can read players"   on players for select using (true);
+create policy "family can add players"    on players for insert with check (true);
+create policy "family can rename players" on players for update using (true);
 
 create policy "family can read picks"   on picks for select using (true);
 create policy "family can make picks"   on picks for insert with check (true);
