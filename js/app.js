@@ -90,7 +90,21 @@ async function checkForUpdate() {
   } catch {} // offline or blocked: try again next interval
 }
 
+// Android lets us pop the real install prompt; grab it when the browser offers.
+let installPrompt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installPrompt = e; });
+
 function bindNav() {
+  // Already on the home screen? No need to offer it.
+  if (matchMedia("(display-mode: standalone)").matches || navigator.standalone) $("#a2hs").hidden = true;
+  $("#a2hs").onclick = () => {
+    if (installPrompt) { installPrompt.prompt(); installPrompt = null; return; }
+    const steps = $("#a2hssteps");
+    steps.hidden = false;
+    steps.innerHTML = /iPhone|iPad|iPod/.test(navigator.userAgent)
+      ? `On an iPhone: tap the <b>Share</b> button at the bottom of the browser (the square with the arrow pointing up), scroll down, tap <b>Add to Home Screen</b>, then tap <b>Add</b>. The 🏈 icon lands on your home screen.`
+      : `Open your browser's menu (the <b>⋮</b> in the corner) and tap <b>Add to home screen</b> or <b>Install app</b>.`;
+  };
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
   $("#who").onclick = () => { state.showJoin = true; setView("picks"); };
   $("#signout").onclick = () => {
