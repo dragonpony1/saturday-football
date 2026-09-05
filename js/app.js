@@ -138,6 +138,7 @@ function render() {
     ? `${fmtDate(entry.start)} – ${fmtDate(entry.end)}` : "";
   if (state.view === "schedule") renderSchedule();
   else if (state.view === "picks") renderPicks(entry);
+  else if (state.view === "rules") renderRules();
   else renderStandings();
   $("#signout").hidden = !state.player;
   $("#who").hidden = !state.player;
@@ -362,6 +363,23 @@ function dropDeadLeague(leagueId) {
 }
 
 const normCode = s => String(s).trim().toLowerCase();
+
+// ---------- rules ----------
+
+function renderRules() {
+  $("#content").innerHTML = `<div class="join rules">
+    <h2>Rules &amp; scoring</h2>
+    <ul>
+      <li><b>Pick every game.</b> On the My picks tab, tap the team you think wins. Tap-and-done — it saves by itself.</li>
+      <li><b>1 point per correct pick.</b> Most points at the end of the season wins. Ties share the glory.</li>
+      <li><b>Picks lock Thursday at noon</b> (Mountain time) each week. Games that kick off before then lock at their kickoff instead.</li>
+      <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>
+      <li><b>Once a game locks, everyone's picks show</b> under it. No copying, all bragging.</li>
+      <li><b>Standings</b> adds up the whole season. Games still being played don't count until they're final.</li>
+      <li><b>New folks join</b> with the league passcode and their name — same name every time, so picks stay together.</li>
+    </ul>
+  </div>`;
+}
 
 // ---------- standings ----------
 
