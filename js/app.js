@@ -42,7 +42,12 @@ const state = {
       state.memberships.push({ league: state.league, player: state.player });
       localStorage.setItem("memberships", JSON.stringify(state.memberships));
     }
-    if (state.league) await loadLeague().catch(showLeagueError);
+    if (state.league) {
+      // A league can be deleted behind the scenes — drop it cleanly if so.
+      const ok = await api.getLeagueById(state.league.id).catch(() => state.league);
+      if (ok) await loadLeague().catch(showLeagueError);
+      else dropDeadLeague(state.league.id);
+    }
   }
   await loadWeek(state.week);
 })();
@@ -68,7 +73,7 @@ function bindNav() {
 
 async function shareInvite() {
   const code = state.league?.passcode || LEAGUE_PASSCODE;
-  const lname = state.league?.name || "Mess With 'Em All";
+  const lname = state.league?.name || "Brimhall mess'n";
   const text = `Join our football pick'em league — ${lname}!\n${location.origin + location.pathname}\nPasscode: ${code}`;
   try {
     await navigator.share({ text });
@@ -333,6 +338,8 @@ async function joinLeague(league, name) {
 }
 
 async function switchLeague(m) {
+  const ok = await api.getLeagueById(m.league.id).catch(() => m.league);
+  if (!ok) return dropDeadLeague(m.league.id);
   state.league = m.league; state.player = m.player;
   localStorage.setItem("league", JSON.stringify(state.league));
   localStorage.setItem("player", JSON.stringify(state.player));
@@ -341,6 +348,17 @@ async function switchLeague(m) {
   state.showJoin = false;
   render();
   await loadLeague().catch(showLeagueError); render();
+}
+
+function dropDeadLeague(leagueId) {
+  state.memberships = state.memberships.filter(m => m.league.id !== leagueId);
+  localStorage.setItem("memberships", JSON.stringify(state.memberships));
+  if (state.league?.id === leagueId) {
+    localStorage.removeItem("player"); localStorage.removeItem("league");
+    state.player = null; state.league = null; state.players = []; state.picks = [];
+  }
+  $("#banner").textContent = "That league no longer exists. Pick another from your list, or join one.";
+  render();
 }
 
 const normCode = s => String(s).trim().toLowerCase();

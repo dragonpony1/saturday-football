@@ -98,6 +98,11 @@ export function isConfigured() {
   return !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_ANON_KEY.includes("YOUR-ANON");
 }
 
+export async function getLeagueById(id) {
+  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode`);
+  return rows[0] || null;
+}
+
 export async function getLeague(passcode) {
   const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode`);
   return rows[0] || null;

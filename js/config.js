@@ -2,12 +2,12 @@
 export const SUPABASE_URL = "https://fzyfxccwrgxysoeqohlp.supabase.co";
 export const SUPABASE_ANON_KEY = "sb_publishable_IWCEz08f1cRC2pkxVPclGw__Qpwaqtn";
 
-// Anyone who knows this can join the league. Change it to whatever you like.
-export const LEAGUE_PASSCODE = "touchdown";
+// Fallback passcode shown in the share card before you've joined a league.
+export const LEAGUE_PASSCODE = "football";
 
 // Shown next to the time zone. Bump on every push so phones can confirm
 // they have the latest (old copies can linger ~10 minutes in caches).
-export const VERSION = "1.6";
+export const VERSION = "1.7";
 
 export const SEASON = 2026;
 
