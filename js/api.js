@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY, SEASON, LOCK_HOUR, LOCK_TZ, OPEN_WEEKS } from "./config.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, SEASON } from "./config.js";
 
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard";
 
@@ -53,30 +53,9 @@ function parseGames(json) {
 
 // ---------- Lock time ----------
 
-// Returns the Date when picks lock for a week: Thursday at LOCK_HOUR in LOCK_TZ.
-// Open weeks stay pickable until the week ends; each game still locks at kickoff.
-export function lockTimeFor(weekEntry) {
-  if (OPEN_WEEKS.includes(weekEntry.value)) {
-    return weekEntry.end ? new Date(weekEntry.end) : new Date(Date.now() + 7 * 864e5);
-  }
-  const d = new Date(weekEntry.start);
-  for (let i = 0; i < 8; i++) {
-    const wd = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: LOCK_TZ }).format(d);
-    if (wd === "Thu") break;
-    d.setUTCDate(d.getUTCDate() + 1);
-  }
-  const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: LOCK_TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
-  // Try both possible UTC offsets for the zone and keep the one that lands on LOCK_HOUR locally.
-  for (const off of ["-06:00", "-07:00", "-05:00", "-08:00", "+00:00"]) {
-    const t = new Date(`${ymd}T${String(LOCK_HOUR).padStart(2, "0")}:00:00${off}`);
-    const h = +new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: LOCK_TZ }).format(t);
-    if (h === LOCK_HOUR) return t;
-  }
-  return d;
-}
-
-export function isGameLocked(game, weekLock) {
-  return Date.now() >= weekLock || (!game.tbd && Date.now() >= game.date);
+// Every game locks at its own kickoff; nothing else locks picks.
+export function isGameLocked(game) {
+  return !game.tbd && Date.now() >= game.date;
 }
 
 // ---------- Supabase (plain REST, no SDK) ----------

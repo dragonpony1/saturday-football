@@ -15,7 +15,7 @@ The owner is newer to coding and often works from an iPad: keep changes small, e
 
 ## Rules of the league (don't change without asking)
 - Each league picks the games on its board (`leagues.pick_mode`: `all` FBS games, `ranked` matchups, or `big12ranked` = Big 12 teams + ranked), 1 point per correct pick.
-- Picks lock Thursday 12:00 in `America/Denver`; games that kick off earlier lock at kickoff.
+- Every game locks at its own kickoff; there is no weekly lock time.
 - Player identity is just a name + shared passcode. It's a family app, not a secure one.
 
 ## Conventions

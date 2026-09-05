@@ -2,7 +2,7 @@
 
 The family league app (formerly "Saturday Football" — the repo keeps that name).
 
-A family college football app: every week's FBS schedule with kickoff times and TV networks, plus a pick'em league where everyone picks the winner of every game before Thursday at noon. One point per correct pick.
+A family college football app: every week's schedule with kickoff times and TV networks, plus a pick'em league where everyone picks winners before each game kicks off. One point per correct pick.
 
 No build step, no framework. Plain HTML/CSS/JS hosted on GitHub Pages, with Supabase holding the picks.
 
@@ -26,7 +26,7 @@ Open this folder in Claude Code and just describe what you want changed. `CLAUDE
 
 ## How picks work
 - Each week, every FBS game appears on **My picks**. Tap a team to pick it. Picks save instantly.
-- Picks lock Thursday at noon Mountain (set in `js/config.js`). Any game that kicks off earlier locks at kickoff.
+- Every game locks at its own kickoff — pick or change any time before then.
 - **Standings** counts one point per correct pick across the season. Unfinished games don't count yet.
 
 ## Notes

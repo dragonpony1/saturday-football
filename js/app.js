@@ -198,15 +198,14 @@ function renderPicks(entry) {
   }
   if (!state.player || !state.league || state.showJoin) return renderJoin();
 
-  const lock = api.lockTimeFor(entry);
   const mine = new Map(state.picks.filter(p => p.player_id === state.player.id && p.week === state.week).map(p => [p.game_id, p.team_id]));
-  const locked = Date.now() >= lock;
   const board = state.games.filter(g => onBoard(g, state.league.pick_mode));
   const made = board.filter(g => mine.has(g.id)).length;
+  const weekDone = board.length > 0 && board.every(g => g.state === "post");
   const modeLabel = { main: " · main conferences", big12ranked: " · Big 12 + ranked", ranked: " · ranked matchups only" }[state.league.pick_mode] || "";
 
-  el.innerHTML = `<div class="lockbar ${locked ? "locked" : ""}">
-    <span>${locked ? "Picks are locked for this week." : `Picks lock ${fmtDateTime(lock)}.`}</span>
+  el.innerHTML = `<div class="lockbar ${weekDone ? "locked" : ""}">
+    <span>${weekDone ? "This week is in the books." : "Each game locks at its kickoff."}</span>
     <span>${made} of ${board.length} picked${modeLabel}</span></div>`;
 
   // Once a game is locked, everyone's picks are fair to show.
@@ -224,7 +223,7 @@ function renderPicks(entry) {
   groupByKickoff(visible).forEach(gs => {
     const sec = document.createElement("section"); sec.className = "slot";
     sec.innerHTML = `<h2>${slotLabel(gs[0])}<small>${gs[0].tbd ? "" : dayLabel(gs[0])}</small></h2>`;
-    gs.forEach(g => sec.appendChild(pickRow(g, mine.get(g.id), api.isGameLocked(g, lock), byGame.get(g.id))));
+    gs.forEach(g => sec.appendChild(pickRow(g, mine.get(g.id), api.isGameLocked(g), byGame.get(g.id))));
     el.appendChild(sec);
   });
 
@@ -417,7 +416,7 @@ function renderRules() {
     <ul>
       <li><b>Pick every game on your league's board.</b> Some leagues pick every FBS game, some just the ranked matchups — My picks shows yours. Tap the team you think wins; it saves by itself.</li>
       <li><b>1 point per correct pick.</b> Most points at the end of the season wins. Ties share the glory.</li>
-      <li><b>Picks lock Thursday at noon</b> (Mountain time) each week. Games that kick off before then lock at their kickoff instead.</li>
+      <li><b>Every game locks at its own kickoff.</b> Pick or change right up until the ball is in the air.</li>
       <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>
       <li><b>Once a game locks, everyone's picks show</b> under it. No copying, all bragging.</li>
       <li><b>Standings</b> adds up the whole season. Games still being played don't count until they're final.</li>
@@ -480,6 +479,5 @@ function groupByKickoff(games) {
 }
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fmtDate = d => new Date(d).toLocaleDateString([], { month: "short", day: "numeric" });
-const fmtDateTime = d => d.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const slotLabel = g => g.tbd ? "Time to be announced" : g.date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 const dayLabel = g => g.date.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
