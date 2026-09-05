@@ -89,34 +89,54 @@ const headers = {
 async function rest(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...opts, headers: { ...headers, ...(opts.headers || {}) } });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
-  return res.status === 204 ? null : res.json();
+  // Successful writes often come back with an empty body (200/201, not just 204).
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 export function isConfigured() {
   return !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_ANON_KEY.includes("YOUR-ANON");
 }
 
-export async function getOrCreatePlayer(name) {
-  const existing = await rest(`players?name=eq.${encodeURIComponent(name)}&select=id,name`);
-  if (existing.length) return existing[0];
-  const created = await rest("players", {
-    method: "POST", body: JSON.stringify({ name }), headers: { Prefer: "return=representation" },
+export async function getLeague(passcode) {
+  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode`);
+  return rows[0] || null;
+}
+
+export async function createLeague(name, passcode) {
+  const created = await rest("leagues", {
+    method: "POST", body: JSON.stringify({ name, passcode }), headers: { Prefer: "return=representation" },
   });
   return created[0];
 }
 
-export function listPlayers() {
-  return rest("players?select=id,name&order=name");
+// For players saved on a phone before leagues existed: look up which league they're in.
+export async function getPlayerLeague(playerId) {
+  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode)`);
+  return rows[0]?.leagues || null;
 }
 
-export function listAllPicks() {
-  return rest(`picks?season=eq.${SEASON}&select=player_id,week,game_id,team_id`);
+export async function getOrCreatePlayer(name, leagueId) {
+  const existing = await rest(`players?name=eq.${encodeURIComponent(name)}&league_id=eq.${encodeURIComponent(leagueId)}&select=id,name`);
+  if (existing.length) return existing[0];
+  const created = await rest("players", {
+    method: "POST", body: JSON.stringify({ name, league_id: leagueId }), headers: { Prefer: "return=representation" },
+  });
+  return created[0];
 }
 
-export function savePick(playerId, week, gameId, teamId) {
+export function listPlayers(leagueId) {
+  return rest(`players?league_id=eq.${encodeURIComponent(leagueId)}&select=id,name&order=name`);
+}
+
+export function listAllPicks(leagueId) {
+  return rest(`picks?season=eq.${SEASON}&league_id=eq.${encodeURIComponent(leagueId)}&select=player_id,week,game_id,team_id`);
+}
+
+export function savePick(playerId, week, gameId, teamId, leagueId) {
   return rest("picks", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates" },
-    body: JSON.stringify({ player_id: playerId, season: SEASON, week, game_id: gameId, team_id: teamId, updated_at: new Date().toISOString() }),
+    body: JSON.stringify({ player_id: playerId, league_id: leagueId, season: SEASON, week, game_id: gameId, team_id: teamId, updated_at: new Date().toISOString() }),
   });
 }

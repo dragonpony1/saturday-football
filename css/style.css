@@ -58,6 +58,8 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .pickbtn.on.right { background: var(--good); border-color: var(--good); }
 .pickbtn.on.wrong { background: var(--live); border-color: var(--live); }
 
+.schedtip { text-align: center; margin: 10px 0 -8px; }
+.togglefinished { display: block; margin: 18px auto 0; }
 .fampicks { grid-column: 1 / -1; font-size: 13px; color: var(--mute); border-top: 1px dashed var(--rule); padding-top: 6px; margin-top: 2px; }
 .fampicks b { color: var(--ink); font-weight: 600; }
 
@@ -74,6 +76,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .linkbtn { background: none; border: 0; color: var(--mute); text-decoration: underline; margin-top: 10px; cursor: pointer; font-size: 14px; }
 
 .join { background: var(--card); border-radius: 8px; padding: 20px; max-width: 380px; margin: 30px auto; display: flex; flex-direction: column; gap: 12px; }
+.join[hidden] { display: none; }
 .join h2 { font: 500 24px Oswald, sans-serif; margin: 0; color: var(--field); }
 .join label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
 .join input { font: 17px "Source Sans 3", sans-serif; padding: 9px 10px; border: 1.5px solid var(--rule); border-radius: 6px; }

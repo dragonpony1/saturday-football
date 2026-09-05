@@ -5,8 +5,10 @@ const $ = s => document.querySelector(s);
 const state = {
   view: "schedule", week: null, calendar: [], games: [],
   player: JSON.parse(localStorage.getItem("player") || "null"),
-  players: [], picks: [],           // picks: all players' picks this season
+  league: JSON.parse(localStorage.getItem("league") || "null"),
+  players: [], picks: [],           // picks: this league's picks this season
   weekGames: new Map(),             // week -> games (for standings)
+  showFinished: false,              // My picks: finished games are tucked away by default
 };
 
 // ---------- boot ----------
@@ -24,21 +26,41 @@ const state = {
            || state.calendar.find(c => c.end && now < c.end) || state.calendar[0];
   state.week = cur.value;
   buildWeekStrip();
-  if (api.isConfigured()) await loadLeague().catch(showLeagueError);
+  if (api.isConfigured()) {
+    // Phones that joined before leagues existed have a player but no league saved.
+    if (state.player && !state.league) {
+      try {
+        const lg = await api.getPlayerLeague(state.player.id);
+        if (lg) { state.league = lg; localStorage.setItem("league", JSON.stringify(lg)); }
+        else { localStorage.removeItem("player"); state.player = null; } // player row is gone
+      } catch (e) { showLeagueError(e); } // network blip: stay signed in, retry next open
+    }
+    if (state.league) await loadLeague().catch(showLeagueError);
+  }
   await loadWeek(state.week);
 })();
 
 function bindNav() {
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
-  $("#signout").onclick = () => { localStorage.removeItem("player"); state.player = null; render(); };
-  $("#share").onclick = () => { $("#modalcode").textContent = LEAGUE_PASSCODE; $("#sharemodal").hidden = false; };
+  $("#signout").onclick = () => {
+    localStorage.removeItem("player"); localStorage.removeItem("league");
+    state.player = null; state.league = null; state.players = []; state.picks = [];
+    render();
+  };
+  $("#share").onclick = () => {
+    $("#modaltitle").textContent = state.league ? `Invite people to ${state.league.name}` : "Invite the family";
+    $("#modalcode").textContent = state.league?.passcode || LEAGUE_PASSCODE;
+    $("#sharemodal").hidden = false;
+  };
   $("#sendinvite").onclick = shareInvite;
   $("#closemodal").onclick = () => { $("#sharemodal").hidden = true; };
   $("#sharemodal").onclick = e => { if (e.target.id === "sharemodal") $("#sharemodal").hidden = true; };
 }
 
 async function shareInvite() {
-  const text = `Join our family football pick'em league — Mess With 'Em All!\n${location.origin + location.pathname}\nPasscode: ${LEAGUE_PASSCODE}`;
+  const code = state.league?.passcode || LEAGUE_PASSCODE;
+  const lname = state.league?.name || "Mess With 'Em All";
+  const text = `Join our football pick'em league — ${lname}!\n${location.origin + location.pathname}\nPasscode: ${code}`;
   try {
     await navigator.share({ text });
   } catch (e) {
@@ -48,7 +70,7 @@ async function shareInvite() {
       await navigator.clipboard.writeText(text);
       $("#banner").textContent = "Invite copied — paste it into a text to the family.";
     } catch {
-      $("#banner").textContent = `Share this link with the passcode "${LEAGUE_PASSCODE}": ${location.origin + location.pathname}`;
+      $("#banner").textContent = `Share this link with the passcode "${code}": ${location.origin + location.pathname}`;
     }
   }
 }
@@ -84,7 +106,9 @@ async function loadWeek(week) {
 }
 
 async function loadLeague() {
-  [state.players, state.picks] = await Promise.all([api.listPlayers(), api.listAllPicks()]);
+  [state.players, state.picks] = await Promise.all([
+    api.listPlayers(state.league.id), api.listAllPicks(state.league.id),
+  ]);
 }
 
 function showLeagueError(e) {
@@ -102,11 +126,12 @@ function render() {
   else if (state.view === "picks") renderPicks(entry);
   else renderStandings();
   $("#signout").hidden = !state.player;
-  $("#who").textContent = state.player ? state.player.name : "";
+  $("#who").textContent = state.player ? `${state.player.name} · ${state.league?.name || ""}` : "";
 }
 
 function renderSchedule() {
   const el = $("#content"); el.innerHTML = "";
+  if (api.isConfigured()) el.innerHTML = `<p class="hint schedtip">This tab is the TV guide — choose your winners on the <b>My picks</b> tab.</p>`;
   groupByKickoff(state.games).forEach(gs => {
     const sec = document.createElement("section"); sec.className = "slot";
     sec.innerHTML = `<h2>${slotLabel(gs[0])}<small>${gs[0].tbd ? "" : dayLabel(gs[0])}</small></h2>`;
@@ -138,7 +163,7 @@ function renderPicks(entry) {
     el.innerHTML = `<p class="note"><b>League isn't set up yet.</b><br>Add your Supabase URL and key to js/config.js. See the README.</p>`;
     return;
   }
-  if (!state.player) return renderJoin();
+  if (!state.player || !state.league) return renderJoin();
 
   const lock = api.lockTimeFor(entry);
   const mine = new Map(state.picks.filter(p => p.player_id === state.player.id && p.week === state.week).map(p => [p.game_id, p.team_id]));
@@ -158,12 +183,23 @@ function renderPicks(entry) {
     (m.get(p.team_id) || m.set(p.team_id, []).get(p.team_id)).push(nameOf.get(p.player_id) || "?");
   }
 
-  groupByKickoff(state.games).forEach(gs => {
+  const visible = state.showFinished ? state.games : state.games.filter(g => g.state !== "post");
+  const hidden = state.games.length - visible.length;
+
+  groupByKickoff(visible).forEach(gs => {
     const sec = document.createElement("section"); sec.className = "slot";
     sec.innerHTML = `<h2>${slotLabel(gs[0])}<small>${gs[0].tbd ? "" : dayLabel(gs[0])}</small></h2>`;
     gs.forEach(g => sec.appendChild(pickRow(g, mine.get(g.id), api.isGameLocked(g, lock), byGame.get(g.id))));
     el.appendChild(sec);
   });
+
+  if (hidden || state.showFinished) {
+    const t = document.createElement("button");
+    t.className = "linkbtn togglefinished";
+    t.textContent = state.showFinished ? "Hide finished games" : `Show ${hidden} finished game${hidden === 1 ? "" : "s"}`;
+    t.onclick = () => { state.showFinished = !state.showFinished; render(); };
+    el.appendChild(t);
+  }
 }
 
 function pickRow(g, picked, locked, famPicks) {
@@ -193,41 +229,84 @@ async function makePick(g, teamId) {
   const p = state.picks.find(p => p.player_id === state.player.id && p.week === state.week && p.game_id === g.id);
   if (p) p.team_id = teamId; else state.picks.push({ player_id: state.player.id, week: state.week, game_id: g.id, team_id: teamId });
   render();
-  try { await api.savePick(state.player.id, state.week, g.id, teamId); }
+  try { await api.savePick(state.player.id, state.week, g.id, teamId, state.league.id); }
   catch (e) { $("#banner").textContent = "That pick didn't save. Check your connection and tap it again."; console.error(e); }
 }
 
 function renderJoin() {
   $("#content").innerHTML = `<form class="join" id="join">
-    <h2>Join the league</h2>
+    <h2>Join a league</h2>
     <label>Your name<input name="name" required autocomplete="off" placeholder="Dad"></label>
-    <label>League passcode<input name="code" required type="password"></label>
+    <label>League passcode<input name="code" required autocomplete="off"></label>
     <button type="submit">Join</button>
-    <p class="hint">Use the same name every time so your picks stay together.</p>
+    <p class="hint">The passcode decides which league you land in. Use the same name every time so your picks stay together.</p>
+    <p class="hint">Don't have one? <button type="button" class="linkbtn" id="showcreate">Start a new league</button></p>
+  </form>
+  <form class="join" id="create" hidden>
+    <h2>Start a new league</h2>
+    <label>League name<input name="lname" required autocomplete="off" placeholder="The Smith Family"></label>
+    <label>Make up a passcode<input name="code" required autocomplete="off" placeholder="something easy to text"></label>
+    <label>Your name<input name="name" required autocomplete="off"></label>
+    <button type="submit">Create league</button>
+    <p class="hint">Only people you give the passcode can get in. You're the first member.</p>
   </form>`;
+
+  $("#showcreate").onclick = () => { $("#join").hidden = true; $("#create").hidden = false; };
+
   $("#join").onsubmit = async e => {
     e.preventDefault();
     const f = new FormData(e.target);
-    if (f.get("code") !== LEAGUE_PASSCODE) { $("#banner").textContent = "That passcode isn't right."; return; }
+    const code = normCode(f.get("code"));
     const name = f.get("name").trim();
     try {
-      state.player = await api.getOrCreatePlayer(name);
-      localStorage.setItem("player", JSON.stringify(state.player));
-      await loadLeague(); render();
+      const league = await api.getLeague(code);
+      if (!league) { $("#banner").textContent = "No league has that passcode. Check the spelling, or start a new league."; return; }
+      await joinLeague(league, name);
     } catch (err) { showLeagueError(err); }
   };
+
+  $("#create").onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const lname = f.get("lname").trim();
+    const code = normCode(f.get("code"));
+    const name = f.get("name").trim();
+    if (code.length < 4) { $("#banner").textContent = "Make the passcode at least 4 characters."; return; }
+    try {
+      const league = await api.createLeague(lname, code);
+      await joinLeague(league, name);
+    } catch (err) {
+      if (String(err.message).includes("409")) $("#banner").textContent = "A league already uses that passcode. If you just created it, reload and use Join with the same passcode — otherwise make up a different one.";
+      else showLeagueError(err);
+    }
+  };
 }
+
+async function joinLeague(league, name) {
+  // Create the player first, so nothing is saved locally unless the join fully worked.
+  const player = await api.getOrCreatePlayer(name, league.id);
+  state.league = { id: league.id, name: league.name, passcode: league.passcode };
+  state.player = player;
+  localStorage.setItem("league", JSON.stringify(state.league));
+  localStorage.setItem("player", JSON.stringify(state.player));
+  $("#banner").textContent = "";
+  await loadLeague(); render();
+}
+
+const normCode = s => String(s).trim().toLowerCase();
 
 // ---------- standings ----------
 
 async function renderStandings() {
   const el = $("#content");
   if (!api.isConfigured()) { el.innerHTML = `<p class="note">League isn't set up yet — see the README.</p>`; return; }
+  if (!state.league) { el.innerHTML = `<p class="note">Join a league on the <b>My picks</b> tab to see its standings.</p>`; return; }
   el.innerHTML = `<p class="note">Adding up the season…</p>`;
 
   const weeksToScore = [...new Set(state.picks.map(p => p.week))].sort((a, b) => a - b);
   await Promise.all(weeksToScore.filter(w => !state.weekGames.has(w))
     .map(async w => state.weekGames.set(w, await api.fetchWeek(w).catch(() => []))));
+  if (state.view !== "standings") return; // the user moved on while we were fetching
 
   const winners = new Map(); // game_id -> winning team id
   for (const games of state.weekGames.values())
@@ -252,7 +331,7 @@ async function renderStandings() {
 
   el.innerHTML = `<table class="standings"><thead><tr><th></th><th>Player</th><th>Season</th><th>This week</th><th>Hit rate</th></tr></thead>
     <tbody>${rows.map((r, i) => `<tr class="${state.player && r.name === state.player.name ? "me" : ""}">
-      <td class="pos">${i + 1}</td><td>${r.name}</td><td class="num big">${r.total}</td>
+      <td class="pos">${i + 1}</td><td>${esc(r.name)}</td><td class="num big">${r.total}</td>
       <td class="num">${r.thisWeek ? `${r.thisWeek.right} / ${r.thisWeek.played}` : "—"}</td>
       <td class="num">${r.decided ? Math.round(100 * r.total / r.decided) + "%" : "—"}</td></tr>`).join("")}</tbody></table>
     <p class="hint">One point per correct pick. Games that haven't finished don't count yet.</p>`;
