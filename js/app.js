@@ -9,6 +9,7 @@ const state = {
   players: [], picks: [],           // picks: this league's picks this season
   weekGames: new Map(),             // week -> games (for standings)
   showFinished: false,              // My picks: finished games are tucked away by default
+  showJoin: false,                  // signed-in user asked to join/start another league
 };
 
 // ---------- boot ----------
@@ -45,6 +46,7 @@ function bindNav() {
   $("#signout").onclick = () => {
     localStorage.removeItem("player"); localStorage.removeItem("league");
     state.player = null; state.league = null; state.players = []; state.picks = [];
+    state.showJoin = false;
     render();
   };
   $("#share").onclick = () => {
@@ -163,7 +165,7 @@ function renderPicks(entry) {
     el.innerHTML = `<p class="note"><b>League isn't set up yet.</b><br>Add your Supabase URL and key to js/config.js. See the README.</p>`;
     return;
   }
-  if (!state.player || !state.league) return renderJoin();
+  if (!state.player || !state.league || state.showJoin) return renderJoin();
 
   const lock = api.lockTimeFor(entry);
   const mine = new Map(state.picks.filter(p => p.player_id === state.player.id && p.week === state.week).map(p => [p.game_id, p.team_id]));
@@ -200,6 +202,12 @@ function renderPicks(entry) {
     t.onclick = () => { state.showFinished = !state.showFinished; render(); };
     el.appendChild(t);
   }
+
+  const j = document.createElement("button");
+  j.className = "linkbtn togglefinished";
+  j.textContent = "Join or start another league";
+  j.onclick = () => { state.showJoin = true; render(); };
+  el.appendChild(j);
 }
 
 function pickRow(g, picked, locked, famPicks) {
@@ -234,7 +242,8 @@ async function makePick(g, teamId) {
 }
 
 function renderJoin() {
-  $("#content").innerHTML = `<form class="join" id="join">
+  $("#content").innerHTML = `${state.player && state.league ? `<p class="hint schedtip"><button type="button" class="linkbtn" id="backtoleague">← Back to ${esc(state.league.name)}</button></p>` : ""}
+  <form class="join" id="join">
     <h2>Join a league</h2>
     <label>Your name<input name="name" required autocomplete="off" placeholder="Dad"></label>
     <label>League passcode<input name="code" required autocomplete="off"></label>
@@ -251,6 +260,8 @@ function renderJoin() {
     <p class="hint">Only people you give the passcode can get in. You're the first member.</p>
   </form>`;
 
+  const back = $("#backtoleague");
+  if (back) back.onclick = () => { state.showJoin = false; render(); };
   $("#showcreate").onclick = () => { $("#join").hidden = true; $("#create").hidden = false; };
 
   $("#join").onsubmit = async e => {
@@ -290,6 +301,7 @@ async function joinLeague(league, name) {
   localStorage.setItem("league", JSON.stringify(state.league));
   localStorage.setItem("player", JSON.stringify(state.player));
   $("#banner").textContent = "";
+  state.showJoin = false;
   await loadLeague(); render();
 }
 

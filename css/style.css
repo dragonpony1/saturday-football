@@ -77,6 +77,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 
 .join { background: var(--card); border-radius: 8px; padding: 20px; max-width: 380px; margin: 30px auto; display: flex; flex-direction: column; gap: 12px; }
 .join[hidden] { display: none; }
+.join .linkbtn { background: none; color: var(--field); font: inherit; font-weight: 600; padding: 0; width: auto; border-radius: 0; }
 .join h2 { font: 500 24px Oswald, sans-serif; margin: 0; color: var(--field); }
 .join label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
 .join input { font: 17px "Source Sans 3", sans-serif; padding: 9px 10px; border: 1.5px solid var(--rule); border-radius: 6px; }
