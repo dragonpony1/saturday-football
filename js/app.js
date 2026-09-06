@@ -12,6 +12,7 @@ const state = {
   showFinished: false,              // My picks: finished games are tucked away by default
   showJoin: false,                  // signed-in user asked to join/start another league
   recapPlayer: null,                // standings row expanded into a week recap
+  infoOpen: new Set(),              // game ids with the info snapshot expanded
 };
 
 // ---------- boot ----------
@@ -324,8 +325,31 @@ function gameRow(g) {
   const status = g.state === "in" ? `<span class="status live">${g.detail}</span>`
                : g.state === "post" ? `<span class="status">${g.detail}</span>` : "";
   el.innerHTML = `<div class="teams">${teamLine(g.away)}${teamLine(g.home)}</div>
-    <div class="meta"><span class="tv">${g.tv}</span>${status}</div>`;
+    <div class="meta"><span class="tv">${g.tv}</span>${status}${infoBtnHtml(g)}</div>${infoPanelHtml(g)}`;
+  bindInfoBtn(el, g);
   return el;
+}
+
+// The little snapshot under the TV chip: line, over/under, records, venue, weather.
+function hasInfo(g) { return !!(g.line || g.ou || g.venue || g.weather || g.home.rec || g.away.rec); }
+function infoBtnHtml(g) { return hasInfo(g) ? `<button type="button" class="infobtn">ⓘ game info</button>` : ""; }
+function infoPanelHtml(g) {
+  if (!hasInfo(g)) return "";
+  const lines = [];
+  if (g.line || g.ou) lines.push(`📊 <b>${esc(g.line || "No line yet")}</b>${g.ou ? ` · over/under ${g.ou}` : ""}`);
+  if (g.home.rec || g.away.rec) lines.push(`🏈 ${esc(g.away.name)} ${esc(g.away.rec || "—")} · ${esc(g.home.name)} ${esc(g.home.rec || "—")}`);
+  if (g.venue) lines.push(`📍 ${esc(g.venue)}`);
+  if (g.weather) lines.push(`🌤 ${esc(g.weather)}`);
+  return `<div class="gameinfo" ${state.infoOpen.has(g.id) ? "" : "hidden"}>${lines.join("<br>")}</div>`;
+}
+function bindInfoBtn(el, g) {
+  const b = el.querySelector(".infobtn");
+  if (!b) return;
+  b.onclick = () => {
+    const p = el.querySelector(".gameinfo");
+    if (p.hidden) { p.hidden = false; state.infoOpen.add(g.id); }
+    else { p.hidden = true; state.infoOpen.delete(g.id); }
+  };
 }
 
 function teamLine(t) {
@@ -407,8 +431,9 @@ function pickRow(g, picked, locked, famPicks) {
   }
   el.innerHTML = `<div class="pickpair">${btn(g.away)}${btn(g.home)}</div>
     <div class="meta"><span class="tv">${g.tv}</span>
-    ${g.state !== "pre" ? `<span class="status ${g.state === "in" ? "live" : ""}">${g.detail}</span>` : `<span class="status">${locked ? "Locked" : ""}</span>`}</div>${fam}`;
+    ${g.state !== "pre" ? `<span class="status ${g.state === "in" ? "live" : ""}">${g.detail}</span>` : `<span class="status">${locked ? "Locked" : ""}</span>`}${infoBtnHtml(g)}</div>${fam}${infoPanelHtml(g)}`;
   el.querySelectorAll(".pickbtn").forEach(b => b.onclick = () => makePick(g, b.dataset.team));
+  bindInfoBtn(el, g);
   return el;
 }
 

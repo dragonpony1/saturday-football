@@ -60,6 +60,10 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 
 .schedtip { text-align: center; margin: 10px 0 -8px; }
 .togglefinished { display: block; margin: 18px auto 0; }
+.infobtn { background: none; border: 0; color: var(--mute); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 0; }
+.gameinfo { grid-column: 1 / -1; font-size: 13px; background: var(--chalk); border-radius: 6px; padding: 8px 12px; margin-top: 4px; line-height: 1.8; }
+.gameinfo[hidden] { display: none; }
+.gameinfo b { color: var(--field); }
 .fampicks { grid-column: 1 / -1; font-size: 13px; color: var(--mute); border-top: 1px dashed var(--rule); padding-top: 6px; margin-top: 2px; }
 .fampicks b { color: var(--ink); font-weight: 600; }
 

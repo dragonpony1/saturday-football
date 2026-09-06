@@ -34,12 +34,18 @@ function parseGames(json) {
       rank: t.curatedRank && t.curatedRank.current <= 25 ? t.curatedRank.current : null,
       conf: t.team.conferenceId,     // ESPN conference id; Big 12 is "4"
       logo: t.team.logo,
+      rec: (t.records || []).find(r => r.type === "total")?.summary || null,
       score: t.score,
       winner: !!t.winner,
     });
     const tv = (c.broadcasts || []).flatMap(b => b.names || []);
     const geo = (c.geoBroadcasts || []).map(g => g.media?.shortName).filter(Boolean);
+    const o = (c.odds || [])[0];
     return {
+      line: o?.details || null,                 // e.g. "BC -3.5"
+      ou: o?.overUnder ?? null,
+      venue: c.venue?.fullName || null,         // includes the city
+      weather: ev.weather ? `${ev.weather.displayValue}, ${ev.weather.temperature}°` : null,
       id: ev.id,
       date: new Date(ev.date),
       tbd: c.timeValid === false,
