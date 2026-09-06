@@ -34,7 +34,9 @@ const state = {
   const cur = state.calendar.find(c => c.end && now >= c.start && now <= c.end)
            || state.calendar.find(c => c.end && now < c.end) || state.calendar[0];
   state.week = cur.value;
+  state.nowWeek = cur.value; // the real-life week, for the live-score ticker
   buildWeekStrip();
+  updateScoreTicker();
   if (api.isConfigured()) {
     // Phones that joined before leagues existed have a player but no league saved.
     if (state.player && !state.league) {
@@ -127,6 +129,22 @@ async function updateRollBtn() {
   } catch {}
 }
 
+// The live-scores ticker: ranked games while the slate is busy, everything
+// that's on when it isn't.
+function updateScoreTicker() {
+  const bar = $("#scoreticker");
+  if (!bar) return;
+  const games = state.weekGames.get(state.nowWeek) || (state.week === state.nowWeek ? state.games : []) || [];
+  const live = games.filter(g => g.state === "in");
+  const ranked = live.filter(g => g.home.rank || g.away.rank);
+  const show = (ranked.length >= 2 ? ranked : live).slice(0, 12);
+  if (!show.length) { bar.hidden = true; return; }
+  const rk = t => t.rank ? `#${t.rank} ` : "";
+  bar.hidden = false;
+  $("#scoretext").textContent = show.map(g =>
+    `🏈 ${rk(g.away)}${g.away.name} ${g.away.score ?? 0}–${g.home.score ?? 0} ${rk(g.home)}${g.home.name} (${g.detail})`).join("   •   ");
+}
+
 // The chat ribbon at the top and the unread badge on the League tab.
 // Every few rotations it moonlights as a home-screen ad for the uninstalled.
 let pulseCount = 0;
@@ -192,6 +210,7 @@ function bindNav() {
   };
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
   $("#who").onclick = () => { state.showJoin = true; setView("picks"); };
+  $("#scoreticker").onclick = () => { setView("schedule"); if (state.week !== state.nowWeek) loadWeek(state.nowWeek); };
   $("#ticker").onclick = () => {
     if (state.tickerTip) {
       if (installPrompt) { installPrompt.prompt(); installPrompt = null; return; }
@@ -822,6 +841,10 @@ async function liveTick() {
   try {
     const fresh = await api.fetchWeek(state.week, { force: true });
     state.games = fresh; state.weekGames.set(state.week, fresh);
+    if (state.nowWeek && state.nowWeek !== state.week) {
+      state.weekGames.set(state.nowWeek, await api.fetchWeek(state.nowWeek, { force: true }));
+    }
+    updateScoreTicker();
     if (state.league) await loadLeague().catch(() => {});
   } catch { return; }
   if (state.view === "schedule") renderSchedule();

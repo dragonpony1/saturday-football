@@ -142,9 +142,11 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .ticker { display: block; width: 100%; background: var(--field-deep); color: var(--chalk); border: 0; padding: 8px 0; overflow: hidden; white-space: nowrap; cursor: pointer; font-size: 14px; text-align: left; }
 .ticker span { display: inline-block; white-space: nowrap; padding-left: 12px; }
 .ticker[hidden] { display: none; }
+.scoreticker { background: var(--ink); font: 500 14px Oswald, sans-serif; letter-spacing: .3px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .pickbtn { transition: background .12s, border-color .12s; }
   .ticker span { padding-left: 100%; animation: tickerscroll 16s linear infinite; }
+  .scoreticker span { animation-duration: 30s; }
   @keyframes tickerscroll { to { transform: translateX(-100%); } }
 }
