@@ -301,6 +301,7 @@ async function loadWeek(week) {
     state.games = await api.fetchWeek(week);
     state.weekGames.set(week, state.games);
     render();
+    updateScoreTicker(); // wake the ticker as soon as games load, not a minute later
   } catch {
     $("#content").innerHTML = `<p class="note"><b>Couldn't load the schedule.</b><br>Check your connection and try again.</p>`;
   }
