@@ -61,9 +61,18 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .schedtip { text-align: center; margin: 10px 0 -8px; }
 .togglefinished { display: block; margin: 18px auto 0; }
 .infobtn { background: none; border: 0; color: var(--mute); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 0; }
-.gameinfo { grid-column: 1 / -1; font-size: 13px; background: var(--chalk); border-radius: 6px; padding: 8px 12px; margin-top: 4px; line-height: 1.8; }
-.gameinfo[hidden] { display: none; }
-.gameinfo b { color: var(--field); }
+.gamecard { max-width: 430px; text-align: left; max-height: 85vh; overflow-y: auto; }
+.gvs { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.gteam { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.gteam small { color: var(--mute); }
+.gat { color: var(--mute); padding-top: 20px; }
+.glogo { width: 46px; height: 46px; object-fit: contain; }
+.gmeta { text-align: center; margin: 8px 0 0; }
+.gamecard h4 { font: 500 17px Oswald, sans-serif; color: var(--field); margin: 16px 0 4px; }
+.gamecard p { margin: 4px 0; font-size: 15px; }
+.projbar { height: 10px; border-radius: 999px; background: var(--field); overflow: hidden; margin: 6px 0 2px; }
+.projbar div { height: 100%; background: var(--line); }
+.gamecard #closegame { display: block; margin: 14px auto 0; }
 .fampicks { grid-column: 1 / -1; font-size: 13px; color: var(--mute); border-top: 1px dashed var(--rule); padding-top: 6px; margin-top: 2px; }
 .fampicks b { color: var(--ink); font-weight: 600; }
 

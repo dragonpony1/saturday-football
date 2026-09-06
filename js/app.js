@@ -217,6 +217,8 @@ function bindNav() {
   $("#sendinvite").onclick = shareInvite;
   $("#closemodal").onclick = () => { $("#sharemodal").hidden = true; };
   $("#sharemodal").onclick = e => { if (e.target.id === "sharemodal") $("#sharemodal").hidden = true; };
+  $("#closegame").onclick = () => { $("#gamemodal").hidden = true; };
+  $("#gamemodal").onclick = e => { if (e.target.id === "gamemodal") $("#gamemodal").hidden = true; };
 }
 
 async function shareInvite() {
@@ -325,31 +327,62 @@ function gameRow(g) {
   const status = g.state === "in" ? `<span class="status live">${g.detail}</span>`
                : g.state === "post" ? `<span class="status">${g.detail}</span>` : "";
   el.innerHTML = `<div class="teams">${teamLine(g.away)}${teamLine(g.home)}</div>
-    <div class="meta"><span class="tv">${g.tv}</span>${status}${infoBtnHtml(g)}</div>${infoPanelHtml(g)}`;
+    <div class="meta"><span class="tv">${g.tv}</span>${status}${infoBtnHtml()}</div>`;
   bindInfoBtn(el, g);
   return el;
 }
 
-// The little snapshot under the TV chip: line, over/under, records, venue, weather.
-function hasInfo(g) { return !!(g.line || g.ou || g.venue || g.weather || g.home.rec || g.away.rec); }
-function infoBtnHtml(g) { return hasInfo(g) ? `<button type="button" class="infobtn">ⓘ game info</button>` : ""; }
-function infoPanelHtml(g) {
-  if (!hasInfo(g)) return "";
-  const lines = [];
-  if (g.line || g.ou) lines.push(`📊 <b>${esc(g.line || "No line yet")}</b>${g.ou ? ` · over/under ${g.ou}` : ""}`);
-  if (g.home.rec || g.away.rec) lines.push(`🏈 ${esc(g.away.name)} ${esc(g.away.rec || "—")} · ${esc(g.home.name)} ${esc(g.home.rec || "—")}`);
-  if (g.venue) lines.push(`📍 ${esc(g.venue)}`);
-  if (g.weather) lines.push(`🌤 ${esc(g.weather)}`);
-  return `<div class="gameinfo" ${state.infoOpen.has(g.id) ? "" : "hidden"}>${lines.join("<br>")}</div>`;
-}
+// The ⓘ button opens the full scouting-report page for a game.
+function infoBtnHtml() { return `<button type="button" class="infobtn">ⓘ game info</button>`; }
 function bindInfoBtn(el, g) {
   const b = el.querySelector(".infobtn");
-  if (!b) return;
-  b.onclick = () => {
-    const p = el.querySelector(".gameinfo");
-    if (p.hidden) { p.hidden = false; state.infoOpen.add(g.id); }
-    else { p.hidden = true; state.infoOpen.delete(g.id); }
-  };
+  if (b) b.onclick = () => openGameInfo(g);
+}
+
+const bigLogo = t => t.logo ? `<img class="glogo" src="${t.logo}" alt="" onerror="this.hidden=true">` : "";
+
+async function openGameInfo(g) {
+  const box = $("#gamedetail");
+  $("#gamemodal").hidden = false;
+  const rk = t => t.rank ? `#${t.rank} ` : "";
+  const head = `<div class="gvs">
+      <div class="gteam">${bigLogo(g.away)}<b>${rk(g.away)}${esc(g.away.name)}</b><small>${esc(g.away.rec || "")}</small></div>
+      <div class="gat">at</div>
+      <div class="gteam">${bigLogo(g.home)}<b>${rk(g.home)}${esc(g.home.name)}</b><small>${esc(g.home.rec || "")}</small></div>
+    </div>
+    <p class="hint gmeta">${g.state !== "pre" ? esc(g.detail) + " · " : ""}${g.tbd ? "Time TBA" : g.date.toLocaleString([], { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · ${esc(g.tv)}</p>`;
+  box.innerHTML = head + `<p class="hint">Pulling the scouting report…</p>`;
+
+  let extra = "";
+  try {
+    const s = await api.fetchGameSummary(g.id);
+    if (s.proj?.home != null && s.proj?.away != null) {
+      const fav = s.proj.home >= s.proj.away ? g.home : g.away;
+      const pct = Math.round(Math.max(s.proj.home, s.proj.away));
+      extra += `<h4>Who's favored</h4>
+        <p><b>${esc(fav.name)}</b> — ${pct}% to win, says ESPN's computer${g.line ? `. Vegas: <b>${esc(g.line)}</b>${g.ou ? ` · O/U ${g.ou}` : ""}` : ""}</p>
+        <div class="projbar"><div style="width:${Math.round(s.proj.away)}%"></div></div>
+        <p class="hint">${esc(g.away.name)} ${Math.round(s.proj.away)}% · ${Math.round(s.proj.home)}% ${esc(g.home.name)}</p>`;
+    } else if (g.line) {
+      extra += `<h4>The line</h4><p>Vegas says <b>${esc(g.line)}</b>${g.ou ? ` · over/under ${g.ou}` : ""}</p>`;
+    }
+    const pl = [];
+    for (const t of s.leaders || []) {
+      const team = t.teamId === g.home.id ? g.home : t.teamId === g.away.id ? g.away : null;
+      for (const e of t.entries.slice(0, 2)) {
+        pl.push(`<b>${esc(e.name || "?")}</b>${team ? ` (${esc(team.name)})` : ""} — ${esc(e.label)}: ${esc(e.stat)}`);
+      }
+    }
+    if (pl.length) extra += `<h4>Players to watch</h4><p>${pl.join("<br>")}</p>`;
+    if (s.article?.headline) extra += `<h4>The story</h4><p><b>${esc(s.article.headline)}</b>${s.article.description ? `<br>${esc(s.article.description)}` : ""}</p>`;
+    const bits = [];
+    if (g.venue) bits.push(`📍 ${esc(g.venue)}`);
+    const w = s.weather || g.weather; if (w) bits.push(`🌤 ${esc(w)}`);
+    if (s.attendance) bits.push(`👥 ${Number(s.attendance).toLocaleString()} fans`);
+    if (bits.length) extra += `<p class="hint">${bits.join(" · ")}</p>`;
+    if (!extra) extra = `<p class="hint">No scouting data on this one — pick with your gut.</p>`;
+  } catch (e) { extra = `<p class="hint">Couldn't reach the scouting report. Try again in a minute.</p>`; console.error(e); }
+  if (!$("#gamemodal").hidden) box.innerHTML = head + extra;
 }
 
 function teamLine(t) {
@@ -431,7 +464,7 @@ function pickRow(g, picked, locked, famPicks) {
   }
   el.innerHTML = `<div class="pickpair">${btn(g.away)}${btn(g.home)}</div>
     <div class="meta"><span class="tv">${g.tv}</span>
-    ${g.state !== "pre" ? `<span class="status ${g.state === "in" ? "live" : ""}">${g.detail}</span>` : `<span class="status">${locked ? "Locked" : ""}</span>`}${infoBtnHtml(g)}</div>${fam}${infoPanelHtml(g)}`;
+    ${g.state !== "pre" ? `<span class="status ${g.state === "in" ? "live" : ""}">${g.detail}</span>` : `<span class="status">${locked ? "Locked" : ""}</span>`}${infoBtnHtml()}</div>${fam}`;
   el.querySelectorAll(".pickbtn").forEach(b => b.onclick = () => makePick(g, b.dataset.team));
   bindInfoBtn(el, g);
   return el;

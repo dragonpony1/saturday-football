@@ -58,6 +58,33 @@ function parseGames(json) {
   }).sort((a, b) => a.date - b.date);
 }
 
+// ---------- game scouting report ----------
+
+const summaryCache = new Map();
+
+export async function fetchGameSummary(id) {
+  if (summaryCache.has(id)) return summaryCache.get(id);
+  const j = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${id}`).then(r => r.json());
+  const out = {
+    proj: j.predictor ? {
+      home: parseFloat(j.predictor.homeTeam?.gameProjection) || null,
+      away: parseFloat(j.predictor.awayTeam?.gameProjection) || null,
+    } : null,
+    leaders: (j.leaders || []).map(t => ({
+      teamId: t.team?.id,
+      entries: (t.leaders || []).map(cat => {
+        const l = cat.leaders?.[0];
+        return l ? { label: cat.displayName, name: l.athlete?.displayName, pos: l.athlete?.position?.abbreviation, stat: l.displayValue } : null;
+      }).filter(Boolean),
+    })),
+    article: j.article ? { headline: j.article.headline, description: j.article.description } : null,
+    weather: j.gameInfo?.weather ? `${j.gameInfo.weather.conditionDescription || ""} ${j.gameInfo.weather.temperature ?? ""}°`.trim() : null,
+    attendance: j.gameInfo?.attendance || null,
+  };
+  summaryCache.set(id, out);
+  return out;
+}
+
 // ---------- Lock time ----------
 
 // Every game locks at its own kickoff; nothing else locks picks.
