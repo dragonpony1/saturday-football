@@ -357,17 +357,19 @@ async function openGameInfo(g) {
   try {
     const s = await api.fetchGameSummary(g.id);
     const friendlyLine = l => { const m = /^(.+?)\s*-([\d.]+)$/.exec(l || ""); return m ? `${m[1]} by ${m[2]}` : l; };
-    const ouLine = ou => ou ? `Vegas expects about <b>${ou} total points</b>${ou >= 62 ? " — could be a shootout 🎆" : ou <= 42 ? " — a defensive slugfest 🧱" : ""}` : "";
+    const ouLine = ou => ou ? `Vegas expect${g.state === "post" ? "ed" : "s"} about <b>${ou} total points</b>${ou >= 62 ? " — could be a shootout 🎆" : ou <= 42 ? " — a defensive slugfest 🧱" : ""}` : "";
+    const line = g.line || s.pcLine;
+    const ou = g.ou || s.pcOu;
     if (s.proj?.home != null && s.proj?.away != null) {
       const fav = s.proj.home >= s.proj.away ? g.home : g.away;
       const pct = Math.round(Math.max(s.proj.home, s.proj.away));
       extra += `<h4>Who's favored</h4>
-        <p><b>${esc(fav.name)}</b> — ${pct}% to win, says ESPN's computer${g.line ? `. Vegas picks <b>${esc(friendlyLine(g.line))}</b> points.` : ""}</p>
-        ${g.ou ? `<p>${ouLine(g.ou)}</p>` : ""}
+        <p><b>${esc(fav.name)}</b> — ${pct}% to win, says ESPN's computer${line ? `. Vegas picks <b>${esc(friendlyLine(line))}</b> points.` : ""}</p>
+        ${ou ? `<p>${ouLine(ou)}</p>` : ""}
         <div class="projbar"><div style="width:${Math.round(s.proj.away)}%"></div></div>
         <p class="hint">${esc(g.away.name)} ${Math.round(s.proj.away)}% · ${Math.round(s.proj.home)}% ${esc(g.home.name)}</p>`;
-    } else if (g.line) {
-      extra += `<h4>The line</h4><p>Vegas picks <b>${esc(friendlyLine(g.line))}</b> points.${g.ou ? ` ${ouLine(g.ou)}` : ""}</p>`;
+    } else if (line) {
+      extra += `<h4>The line</h4><p>Vegas ${g.state === "post" ? "had" : "picks"} <b>${esc(friendlyLine(line))}</b> points.${ou ? ` ${ouLine(ou)}` : ""}</p>`;
     }
     const pl = [];
     for (const t of s.leaders || []) {

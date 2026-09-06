@@ -78,6 +78,8 @@ export async function fetchGameSummary(id) {
       }).filter(Boolean),
     })),
     article: j.article ? { headline: j.article.headline, description: j.article.description } : null,
+    pcLine: j.pickcenter?.[0]?.details || null,
+    pcOu: j.pickcenter?.[0]?.overUnder ?? null,
     weather: j.gameInfo?.weather ? `${j.gameInfo.weather.conditionDescription || ""} ${j.gameInfo.weather.temperature ?? ""}°`.trim() : null,
     attendance: j.gameInfo?.attendance || null,
   };
