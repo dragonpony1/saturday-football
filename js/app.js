@@ -13,6 +13,7 @@ const state = {
   showJoin: false,                  // signed-in user asked to join/start another league
   recapPlayer: null,                // standings row expanded into a week recap
   infoOpen: new Set(),              // game ids with the info snapshot expanded
+  followGame: localStorage.getItem("followGame") || null, // play-by-play on the ticker
 };
 
 // ---------- boot ----------
@@ -137,9 +138,16 @@ function updateScoreTicker() {
   const games = state.weekGames.get(state.nowWeek) || (state.week === state.nowWeek ? state.games : []) || [];
   const live = games.filter(g => g.state === "in");
   const ranked = live.filter(g => g.home.rank || g.away.rank);
-  const show = (ranked.length >= 2 ? ranked : live).slice(0, 12);
-  if (!show.length) { bar.hidden = true; return; }
+  const followed = state.followGame ? live.find(g => g.id === state.followGame) : null;
+  if (state.followGame && !followed) { state.followGame = null; localStorage.removeItem("followGame"); } // game over
+  const show = (ranked.length >= 2 ? ranked : live).filter(g => g !== followed).slice(0, 12);
+  if (!show.length && !followed) { bar.hidden = true; return; }
   const rk = t => t.rank ? `#${t.rank} ` : "";
+  let lead = "";
+  if (followed) {
+    const g = followed;
+    lead = `<b class="followseg">📻 ${rk(g.away)}${esc(g.away.name)} ${g.away.score ?? 0}–${g.home.score ?? 0} ${rk(g.home)}${esc(g.home.name)} (${esc(g.detail)})${g.sit?.dd ? ` · ${esc(g.sit.dd)}` : ""}${g.sit?.last ? ` · ${esc(g.sit.last)}` : ""}</b>${show.length ? "&ensp;•&ensp;" : ""}`;
+  }
   // Upset alert: an unranked team leading a ranked one, live.
   const isUpset = g => {
     const rankedSide = g.away.rank && !g.home.rank ? g.away : g.home.rank && !g.away.rank ? g.home : null;
@@ -148,7 +156,7 @@ function updateScoreTicker() {
     return (+other.score || 0) > (+rankedSide.score || 0);
   };
   bar.hidden = false;
-  $("#scoretext").innerHTML = show.map(g => {
+  $("#scoretext").innerHTML = lead + show.map(g => {
     const txt = `${rk(g.away)}${esc(g.away.name)} ${g.away.score ?? 0}–${g.home.score ?? 0} ${rk(g.home)}${esc(g.home.name)} (${esc(g.detail)})`;
     return isUpset(g) ? `<span class="upset">🚨 UPSET ALERT: ${txt}</span>` : `🏈 ${txt}`;
   }).join("&ensp;•&ensp;");
@@ -378,8 +386,10 @@ async function openGameInfo(g) {
       <div class="gat">at</div>
       <div class="gteam">${bigLogo(g.home)}<b>${rk(g.home)}${esc(g.home.name)}</b><small>${esc(g.home.rec || "")}</small></div>
     </div>
-    <p class="hint gmeta">${g.state !== "pre" ? esc(g.detail) + " · " : ""}${g.tbd ? "Time TBA" : g.date.toLocaleString([], { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · ${esc(g.tv)}</p>`;
+    <p class="hint gmeta">${g.state !== "pre" ? esc(g.detail) + " · " : ""}${g.tbd ? "Time TBA" : g.date.toLocaleString([], { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · ${esc(g.tv)}</p>
+    ${g.state === "in" ? `<p class="gmeta"><button type="button" id="followbtn" class="linkbtn"></button></p>` : ""}`;
   box.innerHTML = head + `<p class="hint">Pulling the scouting report…</p>`;
+  bindFollowBtn(g);
 
   let extra = "";
   try {
@@ -415,7 +425,21 @@ async function openGameInfo(g) {
     if (bits.length) extra += `<p class="hint">${bits.join(" · ")}</p>`;
     if (!extra) extra = `<p class="hint">No scouting data on this one — pick with your gut.</p>`;
   } catch (e) { extra = `<p class="hint">Couldn't reach the scouting report. Try again in a minute.</p>`; console.error(e); }
-  if (!$("#gamemodal").hidden) box.innerHTML = head + extra;
+  if (!$("#gamemodal").hidden) { box.innerHTML = head + extra; bindFollowBtn(g); }
+}
+
+// Follow one live game: its play-by-play leads the black ticker.
+function bindFollowBtn(g) {
+  const b = $("#followbtn");
+  if (!b) return;
+  const label = () => b.textContent = state.followGame === g.id ? "📻 On the ticker — tap to stop" : "📻 Follow this game on the ticker";
+  label();
+  b.onclick = () => {
+    if (state.followGame === g.id) { state.followGame = null; localStorage.removeItem("followGame"); }
+    else { state.followGame = g.id; localStorage.setItem("followGame", g.id); }
+    label();
+    updateScoreTicker();
+  };
 }
 
 function teamLine(t) {

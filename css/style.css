@@ -144,6 +144,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .ticker[hidden] { display: none; }
 .scoreticker { background: #000; color: #fff; font: 500 14px Oswald, sans-serif; letter-spacing: .3px; }
 .scoreticker .upset { color: #ffee55; font-weight: 700; }
+.scoreticker .followseg { color: #7fd4ff; font-weight: 700; }
 
 @media (prefers-reduced-motion: no-preference) {
   .pickbtn { transition: background .12s, border-color .12s; }

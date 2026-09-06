@@ -46,6 +46,10 @@ function parseGames(json) {
       ou: o?.overUnder ?? null,
       venue: c.venue?.fullName || null,         // includes the city
       weather: ev.weather ? `${ev.weather.displayValue}, ${ev.weather.temperature}°` : null,
+      sit: c.situation ? {
+        last: c.situation.lastPlay?.text || null,
+        dd: c.situation.downDistanceText || null,
+      } : null,
       id: ev.id,
       date: new Date(ev.date),
       tbd: c.timeValid === false,
