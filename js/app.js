@@ -127,15 +127,26 @@ async function updateRollBtn() {
 }
 
 // The chat ribbon at the top and the unread badge on the League tab.
+// Every few rotations it moonlights as a home-screen ad for the uninstalled.
+let pulseCount = 0;
 async function updateChatPulse() {
   const bar = $("#ticker");
   if (!state.league || !api.isConfigured()) { if (bar) bar.hidden = true; return; }
   try {
     const msgs = await api.listMessages(state.league.id);
     const last = msgs[msgs.length - 1];
+    pulseCount++;
+    const standalone = matchMedia("(display-mode: standalone)").matches || !!navigator.standalone;
+    const showTip = !standalone && pulseCount % 5 === 2;
+    state.tickerTip = showTip;
     if (bar) {
-      bar.hidden = !last;
-      if (last) $("#tickertext").textContent = `💬 ${last.players?.name || "?"}: ${last.body}`;
+      if (showTip) {
+        bar.hidden = false;
+        $("#tickertext").textContent = "📲 Make it feel like a real app: add it to your home screen — tap here to see how";
+      } else {
+        bar.hidden = !last;
+        if (last) $("#tickertext").textContent = `💬 ${last.players?.name || "?"}: ${last.body}`;
+      }
     }
     const seen = +localStorage.getItem("chatread-" + state.league.id) || 0;
     const unread = msgs.filter(m => new Date(m.created_at).getTime() > seen).length;
@@ -180,7 +191,17 @@ function bindNav() {
   };
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
   $("#who").onclick = () => { state.showJoin = true; setView("picks"); };
-  $("#ticker").onclick = () => { setView("standings"); setTimeout(() => document.querySelector(".chat")?.scrollIntoView({ behavior: "smooth" }), 400); };
+  $("#ticker").onclick = () => {
+    if (state.tickerTip) {
+      if (installPrompt) { installPrompt.prompt(); installPrompt = null; return; }
+      $("#modaltitle").textContent = state.league ? `Invite people to ${state.league.name}` : "Invite the family";
+      $("#modalcode").textContent = state.league?.passcode || LEAGUE_PASSCODE;
+      $("#sharemodal").hidden = false;
+      $("#a2hs").click();
+      return;
+    }
+    setView("standings"); setTimeout(() => document.querySelector(".chat")?.scrollIntoView({ behavior: "smooth" }), 400);
+  };
   $("#signout").onclick = () => {
     localStorage.removeItem("player"); localStorage.removeItem("league");
     state.player = null; state.league = null; state.players = []; state.picks = [];
