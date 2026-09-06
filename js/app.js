@@ -140,9 +140,18 @@ function updateScoreTicker() {
   const show = (ranked.length >= 2 ? ranked : live).slice(0, 12);
   if (!show.length) { bar.hidden = true; return; }
   const rk = t => t.rank ? `#${t.rank} ` : "";
+  // Upset alert: an unranked team leading a ranked one, live.
+  const isUpset = g => {
+    const rankedSide = g.away.rank && !g.home.rank ? g.away : g.home.rank && !g.away.rank ? g.home : null;
+    if (!rankedSide) return false;
+    const other = rankedSide === g.away ? g.home : g.away;
+    return (+other.score || 0) > (+rankedSide.score || 0);
+  };
   bar.hidden = false;
-  $("#scoretext").textContent = show.map(g =>
-    `🏈 ${rk(g.away)}${g.away.name} ${g.away.score ?? 0}–${g.home.score ?? 0} ${rk(g.home)}${g.home.name} (${g.detail})`).join("   •   ");
+  $("#scoretext").innerHTML = show.map(g => {
+    const txt = `${rk(g.away)}${esc(g.away.name)} ${g.away.score ?? 0}–${g.home.score ?? 0} ${rk(g.home)}${esc(g.home.name)} (${esc(g.detail)})`;
+    return isUpset(g) ? `<span class="upset">🚨 UPSET ALERT: ${txt}</span>` : `🏈 ${txt}`;
+  }).join("&ensp;•&ensp;");
 }
 
 // The chat ribbon at the top and the unread badge on the League tab.
