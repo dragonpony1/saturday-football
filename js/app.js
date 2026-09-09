@@ -15,6 +15,8 @@ const state = {
   infoOpen: new Set(),              // game ids with the info snapshot expanded
   followGame: localStorage.getItem("followGame") || null, // play-by-play on the ticker
   lines: new Map(),                 // game id -> { fav_id, points } frozen before kickoff
+  invite: new URLSearchParams(location.search).get("join"), // ?join=<passcode> deep link
+  pendingInvite: null,              // league an invite link is offering
 };
 
 // ---------- boot ----------
@@ -66,6 +68,7 @@ const state = {
       const standalone = matchMedia("(display-mode: standalone)").matches || !!navigator.standalone;
       api.touchPlayer(state.player.id, standalone).catch(() => {});
     }
+    if (state.invite) await handleInvite();
     if (state.league) {
       // A league can be deleted or have settings changed behind the scenes.
       const fresh = await api.getLeagueById(state.league.id).catch(() => state.league);
@@ -213,7 +216,9 @@ function maybeInstallTip() {
     done();
     if (installPrompt) { installPrompt.prompt(); installPrompt = null; return; }
     $("#modaltitle").textContent = state.league ? `Invite people to ${state.league.name}` : "Invite the family";
-    $("#modalcode").textContent = state.league?.passcode || LEAGUE_PASSCODE;
+    const code = state.league?.passcode || LEAGUE_PASSCODE;
+    $("#modalcode").textContent = code;
+    $("#modalqr").src = `https://api.qrserver.com/v1/create-qr-code/?size=560x560&margin=2&data=${encodeURIComponent(inviteLink(code))}`;
     $("#sharemodal").hidden = false;
     $("#a2hs").click(); // reveal the how-to steps right away
   };
@@ -267,6 +272,9 @@ function bindNav() {
   $("#gamemodal").onclick = e => { if (e.target.id === "gamemodal") $("#gamemodal").hidden = true; };
 }
 
+// The invite link carries the passcode, so tapping it opens the right league.
+const inviteLink = code => `${location.origin}${location.pathname}?join=${encodeURIComponent(code)}`;
+
 async function shareInvite() {
   const code = state.league?.passcode || LEAGUE_PASSCODE;
   const lname = state.league?.name || "Brimhall mess'n";
@@ -280,7 +288,7 @@ async function shareInvite() {
       await navigator.clipboard.writeText(text);
       $("#banner").textContent = "Invite copied — paste it into a text to the family.";
     } catch {
-      $("#banner").textContent = `Share this link with the passcode "${code}": ${location.origin + location.pathname}`;
+      $("#banner").textContent = `Send this link: ${inviteLink(code)}`;
     }
   }
 }
@@ -629,6 +637,27 @@ async function makePick(g, teamId) {
 function renderJoin() {
   // Leagues already joined on this device, minus the one currently on screen.
   const mine = state.memberships.filter(m => !state.league || m.league.id !== state.league.id);
+  // An invite link gets its own front door: name only, league already chosen.
+  if (state.pendingInvite) {
+    const lg = state.pendingInvite;
+    $("#content").innerHTML = `<form class="join" id="invite">
+      <h2>${esc(lg.icon || "🏈")} ${esc(lg.name)}</h2>
+      <p class="hint">You've been invited to this ${(lg.sport || "college") === "nfl" ? "NFL" : "college football"} pick'em. Add your name and you're in.</p>
+      <label>Your name<input name="name" required autocomplete="off" placeholder="Andy"></label>
+      <button type="submit">Join ${esc(lg.name)}</button>
+      <p class="hint"><button type="button" class="linkbtn" id="notthis">Not this league?</button></p>
+    </form>`;
+    $("#notthis").onclick = () => { state.pendingInvite = null; render(); };
+    $("#invite").onsubmit = async e => {
+      e.preventDefault();
+      const name = new FormData(e.target).get("name").trim();
+      if (!name) return;
+      try { state.pendingInvite = null; await joinLeague(lg, name); }
+      catch (err) { state.pendingInvite = lg; showLeagueError(err); }
+    };
+    return;
+  }
+
   $("#content").innerHTML = `${state.player && state.league ? `<p class="hint schedtip"><button type="button" class="linkbtn" id="backtoleague">← Back to ${esc(state.league.name)}</button> &nbsp;·&nbsp; <button type="button" class="linkbtn" id="renameme">Change my name</button></p>` : ""}
   ${mine.length ? `<div class="join" id="myleagues"><h2>Your leagues</h2>
     ${mine.map(m => `<button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.icon || "🏈")} ${esc(m.league.name)}<small>${m.league.sport === "nfl" ? "NFL · " : "College · "}as ${esc(m.player.name)} — tap to switch</small></button>`).join("")}
@@ -784,6 +813,22 @@ async function joinLeague(league, name) {
   await loadLeague();
   if (sportChanged) await loadSportSchedule(); else render();
   $("#banner").textContent = `You are in ${league.name} — ${(league.sport || "college") === "nfl" ? "NFL" : "college"} games.`;
+}
+
+// A ?join=<passcode> link: drop straight into that league.
+async function handleInvite() {
+  const code = normCode(state.invite);
+  state.invite = null;
+  history.replaceState(null, "", location.pathname); // don't re-trigger on refresh
+  const known = state.memberships.find(m => normCode(m.league.passcode) === code);
+  if (known) { await switchLeague(known); $("#banner").textContent = `You're in ${known.league.name}.`; return; }
+  try {
+    const lg = await api.getLeague(code);
+    if (!lg) { $("#banner").textContent = "That invite link didn't match a league."; return; }
+    state.pendingInvite = lg;
+    state.showJoin = true;
+    state.view = "picks";
+  } catch (e) { showLeagueError(e); }
 }
 
 async function switchLeague(m) {
