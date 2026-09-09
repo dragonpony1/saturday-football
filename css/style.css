@@ -9,9 +9,17 @@ button { font-family: inherit; }
 
 header { background: var(--field); color: var(--chalk); padding: 18px 16px 0; position: sticky; top: 0; z-index: 5; box-shadow: 0 2px 0 var(--line); }
 .brand, .tabs, .weeks { max-width: 860px; margin: 0 auto; }
-.brand { display: flex; align-items: baseline; justify-content: space-between; }
-h1 { font: 600 28px/1 Oswald, sans-serif; letter-spacing: .5px; margin: 0; }
-.who { font-size: 14px; opacity: .9; }
+.brand { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+h1 { font: 600 28px/1.05 Oswald, sans-serif; letter-spacing: .5px; margin: 0; flex: 0 1 auto; min-width: 0; }
+.who { font-size: 14px; opacity: .9; display: flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; justify-content: flex-end; }
+/* A long league name truncates instead of shoving the buttons around. */
+#who { max-width: 44vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* On a phone the title gets its own line and the controls line up under it. */
+@media (max-width: 460px) {
+  h1 { font-size: 24px; flex: 1 1 100%; }
+  .who { width: 100%; margin-top: 2px; }
+  #who { max-width: 58vw; }
+}
 .who button { background: none; border: 0; color: var(--chalk); text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0 0 0 6px; }
 .who .sharebtn { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; border: 1px solid rgba(244,244,241,.45); border-radius: 999px; padding: 4px 11px; margin-left: 8px; font: 500 13px Oswald, sans-serif; letter-spacing: .3px; }
 .who .sharebtn:hover { background: rgba(244,244,241,.12); }
