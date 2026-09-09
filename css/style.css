@@ -54,6 +54,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .pickbtn { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: var(--chalk); border: 1.5px solid var(--rule); border-radius: 6px; padding: 7px 10px; font-size: 17px; cursor: pointer; color: var(--ink); }
 .pickbtn:disabled { cursor: default; opacity: .75; }
 .pickbtn.on { background: var(--field); border-color: var(--field); color: var(--chalk); }
+.pickbtn.on .tlogo { background: rgba(255,255,255,.92); border-radius: 50%; padding: 1px; }
 .pickbtn.on .rank, .pickbtn.on .score { color: var(--chalk); }
 .pickbtn.on.right { background: var(--good); border-color: var(--good); }
 .pickbtn.on.wrong { background: var(--live); border-color: var(--live); }
@@ -80,6 +81,15 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .projbar { height: 10px; border-radius: 999px; background: var(--field); overflow: hidden; margin: 6px 0 2px; }
 .projbar div { height: 100%; background: var(--line); }
 .gamecard #closegame { display: block; margin: 14px auto 0; }
+.plyrs { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.plyr { display: flex; gap: 10px; align-items: center; font-size: 14px; line-height: 1.35; }
+.shot { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; background: var(--chalk); flex: 0 0 46px; }
+.noshot { display: flex; align-items: center; justify-content: center; font: 600 13px Oswald, sans-serif; color: var(--mute); }
+.jersey { color: var(--mute); font-size: 13px; }
+.vids { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+.vid { display: block; text-decoration: none; color: inherit; }
+.vid video, .vid img { width: 100%; border-radius: 8px; background: #000; display: block; }
+.vid p { margin: 4px 0 0; }
 .fampicks { grid-column: 1 / -1; font-size: 13px; color: var(--mute); border-top: 1px dashed var(--rule); padding-top: 6px; margin-top: 2px; }
 .fampicks b { color: var(--ink); font-weight: 600; }
 

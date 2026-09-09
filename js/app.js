@@ -434,10 +434,22 @@ async function openGameInfo(g) {
     for (const t of s.leaders || []) {
       const team = t.teamId === g.home.id ? g.home : t.teamId === g.away.id ? g.away : null;
       for (const e of t.entries.slice(0, 2)) {
-        pl.push(`<b>${esc(e.name || "?")}</b>${team ? ` (${esc(team.name)})` : ""} — ${esc(e.label)}: ${esc(e.stat)}`);
+        pl.push(`<div class="plyr">
+          ${e.shot ? `<img class="shot" src="${esc(e.shot)}" alt="" loading="lazy" onerror="this.hidden=true">` : `<span class="shot noshot">${esc((e.pos || "?").slice(0, 2))}</span>`}
+          <div><b>${esc(e.name || "?")}</b>${e.jersey ? ` <span class="jersey">#${esc(e.jersey)}</span>` : ""}
+          ${team ? `<br><span class="hint">${esc(team.name)}</span>` : ""}
+          <br>${esc(e.label)}: ${esc(e.stat)}</div></div>`);
       }
     }
-    if (pl.length) extra += `<h4>Players to watch</h4><p>${pl.join("<br>")}</p>`;
+    if (pl.length) extra += `<h4>Players to watch</h4><div class="plyrs">${pl.join("")}</div>`;
+
+    if (s.videos?.length) {
+      extra += `<h4>Highlights</h4><div class="vids">` + s.videos.map((v, i) => v.src
+        ? `<div class="vid"><video controls preload="none" playsinline ${v.thumb ? `poster="${esc(v.thumb)}"` : ""} src="${esc(v.src)}"></video>
+            <p class="hint">${esc(v.headline || "Highlights")}</p></div>`
+        : `<a class="vid" href="${esc(v.web)}" target="_blank" rel="noopener">${v.thumb ? `<img src="${esc(v.thumb)}" alt="" loading="lazy">` : ""}
+            <p class="hint">▶ ${esc(v.headline || "Watch on ESPN")}</p></a>`).join("") + `</div>`;
+    }
     if (s.article?.headline) extra += `<h4>The story</h4><p><b>${esc(s.article.headline)}</b>${s.article.description ? `<br>${esc(s.article.description)}` : ""}</p>`;
     const bits = [];
     if (g.venue) bits.push(`📍 ${esc(g.venue)}`);
@@ -536,7 +548,10 @@ function pickRow(g, picked, locked, famPicks, isLock = false, isCougar = false) 
     const isPick = picked === t.id;
     const res = g.state === "post" && isPick ? pickResult(g, t.id) : null;
     const result = res === "win" ? "right" : res === "loss" ? "wrong" : "";
-    return `<button class="pickbtn ${isPick ? "on" : ""} ${result}" data-team="${t.id}" ${locked ? "disabled" : ""}
+    // A picked team wears its own colors — but only when the result isn't in yet,
+    // so right/wrong stay unmistakably green and red.
+    const wear = isPick && !result && t.color ? ` style="background:${t.color};border-color:${t.color};color:#fff"` : "";
+    return `<button class="pickbtn ${isPick ? "on" : ""} ${result}" data-team="${t.id}" ${locked ? "disabled" : ""}${wear}
       aria-pressed="${isPick}"><span class="rank">${t.rank || ""}</span>${logoImg(t)}<span class="name">${t.name}</span>
       <span class="score">${t.score ?? ""}</span></button>`;
   };

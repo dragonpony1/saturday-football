@@ -43,6 +43,8 @@ function parseGames(json) {
       rank: t.curatedRank && t.curatedRank.current <= 25 ? t.curatedRank.current : null,
       conf: t.team.conferenceId,     // ESPN conference id; Big 12 is "4"
       logo: t.team.logo,
+      color: t.team.color ? `#${t.team.color}` : null,
+      alt: t.team.alternateColor ? `#${t.team.alternateColor}` : null,
       rec: (t.records || []).find(r => r.type === "total")?.summary || null,
       score: t.score,
       winner: !!t.winner,
@@ -87,9 +89,18 @@ export async function fetchGameSummary(id) {
       teamId: t.team?.id,
       entries: (t.leaders || []).map(cat => {
         const l = cat.leaders?.[0];
-        return l ? { label: cat.displayName, name: l.athlete?.displayName, pos: l.athlete?.position?.abbreviation, stat: l.displayValue } : null;
+        return l ? {
+          label: cat.displayName, name: l.athlete?.displayName, pos: l.athlete?.position?.abbreviation,
+          stat: l.displayValue, shot: l.athlete?.headshot?.href || null, jersey: l.athlete?.jersey || null,
+        } : null;
       }).filter(Boolean),
     })),
+    videos: (j.videos || []).slice(0, 3).map(v => ({
+      headline: v.headline,
+      thumb: v.thumbnail || v.posterImages?.default?.href || null,
+      src: v.links?.source?.HD?.href || v.links?.source?.href || null,
+      web: v.links?.web?.href || null,
+    })).filter(v => v.src || v.web),
     article: j.article ? { headline: j.article.headline, description: j.article.description } : null,
     pcLine: j.pickcenter?.[0]?.details || null,
     pcOu: j.pickcenter?.[0]?.overUnder ?? null,
