@@ -412,7 +412,7 @@ async function openGameInfo(g) {
   box.innerHTML = head + `<p class="hint">Pulling the scouting report…</p>`;
   bindFollowBtn(g);
 
-  let extra = "";
+  let extra = "", vids = "";
   try {
     const s = await api.fetchGameSummary(g.id);
     const friendlyLine = l => { const m = /^(.+?)\s*-([\d.]+)$/.exec(l || ""); return m ? `${m[1]} by ${m[2]}` : l; };
@@ -444,7 +444,7 @@ async function openGameInfo(g) {
     if (pl.length) extra += `<h4>Players to watch</h4><div class="plyrs">${pl.join("")}</div>`;
 
     if (s.videos?.length) {
-      extra += `<h4>Highlights</h4><div class="vids">` + s.videos.map((v, i) => v.src
+      vids = `<h4>Highlights</h4><div class="vids">` + s.videos.map((v, i) => v.src
         ? `<div class="vid"><video controls preload="none" playsinline ${v.thumb ? `poster="${esc(v.thumb)}"` : ""} src="${esc(v.src)}"></video>
             <p class="hint">${esc(v.headline || "Highlights")}</p></div>`
         : `<a class="vid" href="${esc(v.web)}" target="_blank" rel="noopener">${v.thumb ? `<img src="${esc(v.thumb)}" alt="" loading="lazy">` : ""}
@@ -458,7 +458,7 @@ async function openGameInfo(g) {
     if (bits.length) extra += `<p class="hint">${bits.join(" · ")}</p>`;
     if (!extra) extra = `<p class="hint">No scouting data on this one — pick with your gut.</p>`;
   } catch (e) { extra = `<p class="hint">Couldn't reach the scouting report. Try again in a minute.</p>`; console.error(e); }
-  if (!$("#gamemodal").hidden) { box.innerHTML = head + extra; bindFollowBtn(g); }
+  if (!$("#gamemodal").hidden) { box.innerHTML = head + vids + extra; bindFollowBtn(g); }
 }
 
 // Follow one live game: its play-by-play leads the black ticker.
