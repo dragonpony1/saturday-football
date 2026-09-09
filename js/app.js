@@ -14,6 +14,7 @@ const state = {
   recapPlayer: null,                // standings row expanded into a week recap
   infoOpen: new Set(),              // game ids with the info snapshot expanded
   followGame: localStorage.getItem("followGame") || null, // play-by-play on the ticker
+  lines: new Map(),                 // game id -> { fav_id, points } frozen before kickoff
 };
 
 // ---------- boot ----------
@@ -303,6 +304,8 @@ async function loadWeek(week) {
     state.weekGames.set(week, state.games);
     render();
     updateScoreTicker(); // wake the ticker as soon as games load, not a minute later
+    await syncLines(state.games); // freeze/refresh the spread for this week
+    if (spreadLeague()) render();
   } catch {
     $("#content").innerHTML = `<p class="note"><b>Couldn't load the schedule.</b><br>Check your connection and try again.</p>`;
   }
@@ -473,8 +476,9 @@ function renderPicks(entry) {
   const board = state.games.filter(g => onBoard(g, state.league.pick_mode));
   const made = board.filter(g => mine.has(g.id)).length;
   const weekDone = board.length > 0 && board.every(g => g.state === "post");
-  const modeLabel = api.getSport() === "nfl" ? " · NFL"
-    : { main: " · main conferences", big12ranked: " · Big 12 + ranked", ranked: " · ranked matchups only" }[state.league.pick_mode] || "";
+  const modeLabel = (api.getSport() === "nfl" ? " · NFL"
+    : { main: " · main conferences", big12ranked: " · Big 12 + ranked", ranked: " · ranked matchups only" }[state.league.pick_mode] || "")
+    + (spreadLeague() ? " · vs the spread" : "");
 
   el.innerHTML = `<div class="lockbar ${weekDone ? "locked" : ""}">
     <span>${weekDone ? "This week is in the books." : "Each game locks at its kickoff."}</span>
@@ -519,7 +523,8 @@ function pickRow(g, picked, locked, famPicks) {
   el.className = `game pick ${g.state}`;
   const btn = t => {
     const isPick = picked === t.id;
-    const result = g.state === "post" && isPick ? (t.winner ? "right" : "wrong") : "";
+    const res = g.state === "post" && isPick ? pickResult(g, t.id) : null;
+    const result = res === "win" ? "right" : res === "loss" ? "wrong" : "";
     return `<button class="pickbtn ${isPick ? "on" : ""} ${result}" data-team="${t.id}" ${locked ? "disabled" : ""}
       aria-pressed="${isPick}"><span class="rank">${t.rank || ""}</span>${logoImg(t)}<span class="name">${t.name}</span>
       <span class="score">${t.score ?? ""}</span></button>`;
@@ -575,6 +580,10 @@ function renderJoin() {
     <label>Which football<select name="sport">
       <option value="college">College football</option>
       <option value="nfl">NFL</option>
+    </select></label>
+    <label>How picks score<select name="scoring">
+      <option value="winner">Straight up — just pick the winner</option>
+      <option value="spread">Against the spread — your team has to cover</option>
     </select></label>
     <label>Make up a passcode<input name="code" required autocomplete="off" placeholder="something easy to text"></label>
     <label>Your name<input name="name" required autocomplete="off"></label>
@@ -641,7 +650,7 @@ function renderJoin() {
     const name = f.get("name").trim();
     if (code.length < 4) { $("#banner").textContent = "Make the passcode at least 4 characters."; return; }
     try {
-      const league = await api.createLeague(lname, code, f.get("mode") || "all", iconTrim((f.get("icon") || "").trim()) || "🏈", f.get("sport") || "college");
+      const league = await api.createLeague(lname, code, f.get("mode") || "all", iconTrim((f.get("icon") || "").trim()) || "🏈", f.get("sport") || "college", f.get("scoring") || "winner");
       await joinLeague(league, name);
     } catch (err) {
       if (String(err.message).includes("409")) $("#banner").textContent = "A league already uses that passcode. If you just created it, reload and use Join with the same passcode — otherwise make up a different one.";
@@ -682,7 +691,8 @@ async function switchLeague(m) {
 
 // Make this the active league and keep localStorage + the memberships list current.
 function rememberLeague(league) {
-  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all", icon: league.icon || "🏈", icon_url: league.icon_url || null, sport: league.sport || "college" };
+  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all", icon: league.icon || "🏈", icon_url: league.icon_url || null, sport: league.sport || "college", scoring: league.scoring || "winner" };
+  state.lines.clear();
   localStorage.setItem("league", JSON.stringify(state.league));
   state.memberships = state.memberships.map(m => m.league.id === league.id ? { ...m, league: state.league } : m);
   localStorage.setItem("memberships", JSON.stringify(state.memberships));
@@ -700,6 +710,52 @@ function dropDeadLeague(leagueId) {
 }
 
 const normCode = s => String(s).trim().toLowerCase();
+
+// ---------- betting lines ----------
+
+const spreadLeague = () => state.league?.scoring === "spread";
+
+// Pull the frozen lines for these games, and freeze any that aren't stored yet.
+async function syncLines(games) {
+  if (!spreadLeague() || !api.isConfigured() || !games.length) return;
+  try {
+    const ids = games.map(g => g.id);
+    for (const row of await api.listLines(ids)) state.lines.set(row.game_id, row);
+    // Before kickoff the line can still move — keep the stored one current.
+    const fresh = [];
+    for (const g of games) {
+      if (g.state !== "pre" || !g.line) continue;
+      const m = /^(.+?)\s*-([\d.]+)$/.exec(g.line);
+      if (!m) continue;
+      const abbr = m[1].trim().toLowerCase();
+      const fav = [g.home, g.away].find(t => (t.name || "").toLowerCase().startsWith(abbr.slice(0, 3))
+        || (t.full || "").toLowerCase().includes(abbr));
+      if (!fav) continue;
+      const points = parseFloat(m[2]);
+      const have = state.lines.get(g.id);
+      if (have && +have.points === points && have.fav_id === fav.id) continue;
+      const row = { game_id: g.id, fav_id: fav.id, points };
+      fresh.push(row); state.lines.set(g.id, row);
+    }
+    if (fresh.length) await api.saveLines(fresh);
+  } catch (e) { console.error(e); }
+}
+
+// Did this pick cash? Returns "win" | "loss" | "push" | null (not decided yet).
+// Spread leagues fall back to straight-up when a game never had a line.
+function pickResult(g, teamId) {
+  if (!g || g.state !== "post") return null;
+  const mine = g.home.id === teamId ? g.home : g.away;
+  const other = g.home.id === teamId ? g.away : g.home;
+  if (!spreadLeague()) return mine.winner ? "win" : "loss";
+  const ln = state.lines.get(g.id);
+  if (!ln) return mine.winner ? "win" : "loss";
+  const margin = (+mine.score || 0) - (+other.score || 0);
+  const spread = ln.fav_id === mine.id ? -Math.abs(+ln.points) : Math.abs(+ln.points);
+  const adjusted = margin + spread;
+  if (adjusted === 0) return "push";
+  return adjusted > 0 ? "win" : "loss";
+}
 
 // Reload the schedule when a league switch changes sports.
 async function loadSportSchedule() {
@@ -745,7 +801,8 @@ function renderRules() {
     <h2>Rules &amp; scoring</h2>
     <ul>
       <li><b>Pick every game on your league's board.</b> College leagues pick a slice of the FBS slate (every game, ranked matchups, or the main conferences); NFL leagues pick all 16 games. My picks shows yours — tap the team you think wins and it saves by itself.</li>
-      <li><b>1 point per correct pick.</b> Most points at the end of the season wins. Ties share the glory.</li>
+      <li><b>1 point per correct pick.</b> Straight-up leagues just need your team to win. Against-the-spread leagues need your team to <i>cover</i>: the favorite has to win by more than the spread, the underdog has to lose by less (or win outright). Land exactly on the number and it's a push — nobody scores it. Most points at the end of the season wins; ties share the glory.</li>
+      <li><b>The spread is frozen before kickoff</b>, so everyone in the league is scored against the same number even if Vegas moves it later. Games that never had a line are scored straight up.</li>
       <li><b>Every game locks at its own kickoff.</b> Pick or change right up until the ball is in the air.</li>
       <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>
       <li><b>Everyone's picks show under each game</b> — even before kickoff. Copy at your own risk; the scoreboard remembers who thought of it first.</li>
@@ -759,21 +816,21 @@ function renderRules() {
 // ---------- standings ----------
 
 function standingsHtml() {
-  const winners = new Map(); // game_id -> winning team id
+  const byId = new Map(); // game_id -> finished game
   for (const games of state.weekGames.values())
-    for (const g of games) if (g.state === "post") winners.set(g.id, g.home.winner ? g.home.id : g.away.id);
+    for (const g of games) if (g.state === "post") byId.set(g.id, g);
 
   const rows = state.players.map(pl => {
     const mine = state.picks.filter(p => p.player_id === pl.id);
     const byWeek = {};
     let total = 0, decided = 0;
     for (const p of mine) {
-      const w = winners.get(p.game_id);
-      if (!w) continue;
+      const res = pickResult(byId.get(p.game_id), p.team_id);
+      if (!res || res === "push") continue; // pushes score for nobody
       decided++;
       byWeek[p.week] = byWeek[p.week] || { right: 0, played: 0 };
       byWeek[p.week].played++;
-      if (w === p.team_id) { total++; byWeek[p.week].right++; }
+      if (res === "win") { total++; byWeek[p.week].right++; }
     }
     return { id: pl.id, name: pl.name, total, decided, byWeek, thisWeek: byWeek[state.week] };
   }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
@@ -785,7 +842,7 @@ function standingsHtml() {
         <td class="num">${r.thisWeek ? `${r.thisWeek.right} / ${r.thisWeek.played}` : "—"}</td>
         <td class="num">${r.decided ? Math.round(100 * r.total / r.decided) + "%" : "—"}</td></tr>
         ${state.recapPlayer === r.id ? `<tr class="recaprow"><td colspan="5">${recapHtml(r.id)}</td></tr>` : ""}`).join("")}</tbody></table>
-      <p class="hint">One point per correct pick, live as games finish. Tap any player for their week.</p>`
+      <p class="hint">One point per ${spreadLeague() ? "pick that covers the spread (a push scores for nobody)" : "correct pick"}, live as games finish. Tap any player for their week.</p>`
     : `<p class="note"><b>Nobody has joined yet.</b><br>Share the link and the passcode.</p>`;
 }
 
@@ -801,7 +858,11 @@ function recapHtml(pid) {
     const mine = g.home.id === teamId ? g.home : g.away;
     const other = g.home.id === teamId ? g.away : g.home;
     if (g.state === "post") {
-      lines.push(`<span class="${mine.winner ? "rgt" : "wrg"}">${mine.winner ? "✓" : "✗"}</span> ${esc(mine.name)} ${mine.winner ? "beat" : "lost to"} ${esc(other.name)} ${mine.score}–${other.score}`);
+      const res = pickResult(g, teamId);
+      const mark = res === "win" ? `<span class="rgt">✓</span>` : res === "push" ? `<span class="psh">➖</span>` : `<span class="wrg">✗</span>`;
+      const ln = spreadLeague() ? state.lines.get(g.id) : null;
+      const vs = ln ? ` <span class="vsline">(line: ${esc(ln.fav_id === mine.id ? mine.name : other.name)} by ${Math.abs(+ln.points)})</span>` : "";
+      lines.push(`${mark} ${esc(mine.name)} ${mine.winner ? "beat" : "lost to"} ${esc(other.name)} ${mine.score}–${other.score}${vs}`);
     } else pending++;
   }
   return `${lines.length ? lines.join("<br>") : "No finished picks yet this week."}
@@ -873,6 +934,8 @@ async function renderStandings() {
   await Promise.all(weeksToScore.filter(w => !state.weekGames.has(w))
     .map(async w => state.weekGames.set(w, await api.fetchWeek(w).catch(() => []))));
   if (state.view !== "standings") return; // the user moved on while we were fetching
+  if (spreadLeague()) await syncLines([...state.weekGames.values()].flat());
+  if (state.view !== "standings") return;
   const box = $("#standingsbox");
   if (box) box.innerHTML = standingsHtml();
 }
@@ -919,6 +982,7 @@ async function liveTick() {
       state.weekGames.set(state.nowWeek, await api.fetchWeek(state.nowWeek, { force: true }));
     }
     updateScoreTicker();
+    await syncLines(fresh);
     if (state.league) await loadLeague().catch(() => {});
   } catch { return; }
   if (state.view === "schedule") renderSchedule();

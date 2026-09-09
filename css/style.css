@@ -133,6 +133,8 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .recaprow td { background: var(--chalk); font-size: 14px; line-height: 1.8; }
 .recaprow .rgt { color: var(--good); font-weight: 700; }
 .recaprow .wrg { color: var(--live); font-weight: 700; }
+.recaprow .psh { color: var(--mute); font-weight: 700; }
+.recaprow .vsline { color: var(--mute); }
 .standings .num { text-align: right; font-family: Oswald, sans-serif; }
 .standings .num.big { font-size: 22px; color: var(--field); }
 .standings th:nth-child(n+3) { text-align: right; }

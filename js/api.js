@@ -128,25 +128,45 @@ export function isConfigured() {
 }
 
 export async function getLeagueById(id) {
-  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode,pick_mode,icon,icon_url,sport`);
+  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode,pick_mode,icon,icon_url,sport,scoring`);
   return rows[0] || null;
 }
 
 export async function getLeague(passcode) {
-  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode,pick_mode,icon,icon_url,sport`);
+  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode,pick_mode,icon,icon_url,sport,scoring`);
   return rows[0] || null;
 }
 
-export async function createLeague(name, passcode, pickMode, icon, sport) {
+export async function createLeague(name, passcode, pickMode, icon, sport, scoring) {
   const created = await rest("leagues", {
-    method: "POST", body: JSON.stringify({ name, passcode, pick_mode: pickMode, icon, sport: sport || "college" }), headers: { Prefer: "return=representation" },
+    method: "POST",
+    body: JSON.stringify({ name, passcode, pick_mode: pickMode, icon, sport: sport || "college", scoring: scoring || "winner" }),
+    headers: { Prefer: "return=representation" },
   });
   return created[0];
 }
 
+// ---------- betting lines ----------
+// A game's line is frozen in the database before kickoff so every league scores
+// against the same number, no matter when anyone looked.
+
+export function listLines(gameIds) {
+  if (!gameIds.length) return Promise.resolve([]);
+  return rest(`lines?game_id=in.(${gameIds.map(encodeURIComponent).join(",")})&select=game_id,fav_id,points`);
+}
+
+export function saveLines(rows) {
+  if (!rows.length) return Promise.resolve(null);
+  return rest("lines", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify(rows.map(r => ({ ...r, updated_at: new Date().toISOString() }))),
+  });
+}
+
 // For players saved on a phone before leagues existed: look up which league they're in.
 export async function getPlayerLeague(playerId) {
-  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode,pick_mode,icon,icon_url,sport)`);
+  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode,pick_mode,icon,icon_url,sport,scoring)`);
   return rows[0]?.leagues || null;
 }
 
