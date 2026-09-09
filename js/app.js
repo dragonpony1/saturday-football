@@ -480,7 +480,9 @@ function renderPicks(entry) {
   }
   if (!state.player || !state.league || state.showJoin) return renderJoin();
 
-  const mine = new Map(state.picks.filter(p => p.player_id === state.player.id && p.week === state.week).map(p => [p.game_id, p.team_id]));
+  const myPicks = state.picks.filter(p => p.player_id === state.player.id && p.week === state.week);
+  const mine = new Map(myPicks.map(p => [p.game_id, p.team_id]));
+  const locked = new Set(myPicks.filter(p => p.is_lock).map(p => p.game_id));
   const board = state.games.filter(g => onBoard(g, state.league.pick_mode));
   const made = board.filter(g => mine.has(g.id)).length;
   const weekDone = board.length > 0 && board.every(g => g.state === "post");
@@ -489,7 +491,7 @@ function renderPicks(entry) {
     + (spreadLeague() ? " · vs the spread" : "");
 
   el.innerHTML = `<div class="lockbar ${weekDone ? "locked" : ""}">
-    <span>${weekDone ? "This week is in the books." : "Each game locks at its kickoff."}</span>
+    <span>${weekDone ? "This week is in the books." : "Each game locks at its kickoff."}${locksAllowed() ? ` <b>⭐ ${myLocksThisWeek()} of ${locksAllowed()} locks used</b>` : ""}</span>
     <span>${made} of ${board.length} picked${modeLabel}</span></div>`;
 
   // Everyone's picks are public, before and after kickoff — league's choice.
@@ -507,7 +509,7 @@ function renderPicks(entry) {
   groupByKickoff(visible).forEach(gs => {
     const sec = document.createElement("section"); sec.className = "slot";
     sec.innerHTML = `<h2>${slotLabel(gs[0])}<small>${gs[0].tbd ? "" : dayLabel(gs[0])}</small></h2>`;
-    gs.forEach(g => sec.appendChild(pickRow(g, mine.get(g.id), api.isGameLocked(g), byGame.get(g.id))));
+    gs.forEach(g => sec.appendChild(pickRow(g, mine.get(g.id), api.isGameLocked(g), byGame.get(g.id), locked.has(g.id))));
     el.appendChild(sec);
   });
 
@@ -526,7 +528,7 @@ function renderPicks(entry) {
   el.appendChild(j);
 }
 
-function pickRow(g, picked, locked, famPicks) {
+function pickRow(g, picked, locked, famPicks, isLock = false) {
   const el = document.createElement("article");
   el.className = `game pick ${g.state}`;
   const btn = t => {
@@ -545,10 +547,31 @@ function pickRow(g, picked, locked, famPicks) {
   }
   el.innerHTML = `<div class="pickpair">${btn(g.away)}${btn(g.home)}</div>
     <div class="meta"><span class="tv">${g.tv}</span>${spreadHtml(g)}
-    ${g.state !== "pre" ? `<span class="status ${g.state === "in" ? "live" : ""}">${g.detail}</span>` : `<span class="status">${locked ? "Locked" : ""}</span>`}${infoBtnHtml()}</div>${fam}`;
+    ${g.state !== "pre" ? `<span class="status ${g.state === "in" ? "live" : ""}">${g.detail}</span>` : `<span class="status">${locked ? "Locked" : ""}</span>`}${infoBtnHtml()}${lockBtnHtml(picked, locked, isLock)}</div>${fam}`;
   el.querySelectorAll(".pickbtn").forEach(b => b.onclick = () => makePick(g, b.dataset.team));
+  const lb = el.querySelector(".lockbtn");
+  if (lb) lb.onclick = () => toggleLock(g, picked, isLock);
   bindInfoBtn(el, g);
   return el;
+}
+
+// The ⭐ button: only on games you've picked that haven't kicked off.
+function lockBtnHtml(picked, locked, isLock) {
+  if (!locksAllowed() || !picked || locked) return isLock ? `<span class="lockon">⭐ Lock · ${LOCK_POINTS} pts</span>` : "";
+  return `<button type="button" class="lockbtn ${isLock ? "on" : ""}">${isLock ? `⭐ Locked · ${LOCK_POINTS} pts` : "☆ Make this a lock"}</button>`;
+}
+
+async function toggleLock(g, teamId, isLock) {
+  if (!isLock && myLocksThisWeek() >= locksAllowed()) {
+    $("#banner").textContent = `You've used all ${locksAllowed()} locks this week. Un-star one to move it.`;
+    return;
+  }
+  const p = state.picks.find(p => p.player_id === state.player.id && p.week === state.week && p.game_id === g.id);
+  if (!p) return;
+  p.is_lock = !isLock;
+  render();
+  try { await api.savePick(state.player.id, state.week, g.id, teamId, state.league.id, p.is_lock); }
+  catch (e) { p.is_lock = isLock; render(); $("#banner").textContent = "That lock didn't save. Try again."; console.error(e); }
 }
 
 async function makePick(g, teamId) {
@@ -562,7 +585,7 @@ async function makePick(g, teamId) {
   }
   if (p) p.team_id = teamId; else state.picks.push({ player_id: state.player.id, week: state.week, game_id: g.id, team_id: teamId });
   render();
-  try { await api.savePick(state.player.id, state.week, g.id, teamId, state.league.id); }
+  try { await api.savePick(state.player.id, state.week, g.id, teamId, state.league.id, !!p?.is_lock); }
   catch (e) { $("#banner").textContent = "That pick didn't save. Check your connection and tap it again."; console.error(e); }
 }
 
@@ -588,6 +611,10 @@ function renderJoin() {
     <label>Which football<select name="sport">
       <option value="college">College football</option>
       <option value="nfl">NFL</option>
+    </select></label>
+    <label>⭐ Locks per week<select name="locks">
+      <option value="3">3 locks — star your best bets, worth 3 points each</option>
+      <option value="0">None — every pick is worth 1</option>
     </select></label>
     <label>How picks score<select name="scoring">
       <option value="winner">Straight up — just pick the winner</option>
@@ -658,7 +685,7 @@ function renderJoin() {
     const name = f.get("name").trim();
     if (code.length < 4) { $("#banner").textContent = "Make the passcode at least 4 characters."; return; }
     try {
-      const league = await api.createLeague(lname, code, f.get("mode") || "all", iconTrim((f.get("icon") || "").trim()) || "🏈", f.get("sport") || "college", f.get("scoring") || "winner");
+      const league = await api.createLeague(lname, code, f.get("mode") || "all", iconTrim((f.get("icon") || "").trim()) || "🏈", f.get("sport") || "college", f.get("scoring") || "winner", +(f.get("locks") ?? 3));
       await joinLeague(league, name);
     } catch (err) {
       if (String(err.message).includes("409")) $("#banner").textContent = "A league already uses that passcode. If you just created it, reload and use Join with the same passcode — otherwise make up a different one.";
@@ -699,7 +726,7 @@ async function switchLeague(m) {
 
 // Make this the active league and keep localStorage + the memberships list current.
 function rememberLeague(league) {
-  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all", icon: league.icon || "🏈", icon_url: league.icon_url || null, sport: league.sport || "college", scoring: league.scoring || "winner" };
+  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all", icon: league.icon || "🏈", icon_url: league.icon_url || null, sport: league.sport || "college", scoring: league.scoring || "winner", locks_per_week: league.locks_per_week || 0 };
   state.lines.clear();
   localStorage.setItem("league", JSON.stringify(state.league));
   state.memberships = state.memberships.map(m => m.league.id === league.id ? { ...m, league: state.league } : m);
@@ -722,6 +749,14 @@ const normCode = s => String(s).trim().toLowerCase();
 // ---------- betting lines ----------
 
 const spreadLeague = () => state.league?.scoring === "spread";
+
+// ---------- locks ----------
+// Star your best bets: a lock that hits is worth LOCK_POINTS, a lock that
+// misses is worth nothing. Everything else is one point.
+const LOCK_POINTS = 3;
+const locksAllowed = () => state.league?.locks_per_week || 0;
+const myLocksThisWeek = () => state.picks.filter(p =>
+  p.player_id === state.player?.id && p.week === state.week && p.is_lock).length;
 
 // Pull the frozen lines for these games, and freeze any that aren't stored yet.
 async function syncLines(games) {
@@ -815,6 +850,7 @@ function renderRules() {
       <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>
       <li><b>Everyone's picks show under each game</b> — even before kickoff. Copy at your own risk; the scoreboard remembers who thought of it first.</li>
       <li><b>The League tab</b> holds the standings and the league chat. Standings add up the whole season; games still being played don't count until they're final.</li>
+      <li><b>⭐ Locks.</b> If your league uses them, you get a few every week: tap "Make this a lock" on a game you've already picked. A lock that hits is worth <b>${LOCK_POINTS} points</b> instead of 1 — a lock that misses is worth nothing. Pick your spots. You can move them around until the game kicks off.</li>
       <li><b>Tied?</b> The 🎲 tie-breaker button on the League tab posts a public roll (1–100) into the chat. <b>One roll per week, locked in</b> — highest roll wins, no take-backs.</li>
       <li><b>New folks join</b> with the league passcode and their name — same name every time, so picks stay together.</li>
     </ul>
@@ -838,7 +874,10 @@ function standingsHtml() {
       decided++;
       byWeek[p.week] = byWeek[p.week] || { right: 0, played: 0 };
       byWeek[p.week].played++;
-      if (res === "win") { total++; byWeek[p.week].right++; }
+      if (res === "win") {
+        const worth = p.is_lock ? LOCK_POINTS : 1;
+        total += worth; byWeek[p.week].right += worth;
+      }
     }
     return { id: pl.id, name: pl.name, total, decided, byWeek, thisWeek: byWeek[state.week] };
   }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
@@ -850,14 +889,16 @@ function standingsHtml() {
         <td class="num">${r.thisWeek ? `${r.thisWeek.right} / ${r.thisWeek.played}` : "—"}</td>
         <td class="num">${r.decided ? Math.round(100 * r.total / r.decided) + "%" : "—"}</td></tr>
         ${state.recapPlayer === r.id ? `<tr class="recaprow"><td colspan="5">${recapHtml(r.id)}</td></tr>` : ""}`).join("")}</tbody></table>
-      <p class="hint">One point per ${spreadLeague() ? "pick that covers the spread (a push scores for nobody)" : "correct pick"}, live as games finish. Tap any player for their week.</p>`
+      <p class="hint">One point per ${spreadLeague() ? "pick that covers the spread (a push scores for nobody)" : "correct pick"}${locksAllowed() ? `, ${LOCK_POINTS} for a ⭐ lock that hits` : ""}, live as games finish. Tap any player for their week.</p>`
     : `<p class="note"><b>Nobody has joined yet.</b><br>Share the link and the passcode.</p>`;
 }
 
 // One player's report card for the week on screen: hits, misses, and what's pending.
 function recapHtml(pid) {
   const games = state.weekGames.get(state.week) || [];
-  const picks = new Map(state.picks.filter(p => p.player_id === pid && p.week === state.week).map(p => [p.game_id, p.team_id]));
+  const mineWeek = state.picks.filter(p => p.player_id === pid && p.week === state.week);
+  const picks = new Map(mineWeek.map(p => [p.game_id, p.team_id]));
+  const lockIds = new Set(mineWeek.filter(p => p.is_lock).map(p => p.game_id));
   const lines = [];
   let pending = 0;
   for (const g of games) {
@@ -870,7 +911,8 @@ function recapHtml(pid) {
       const mark = res === "win" ? `<span class="rgt">✓</span>` : res === "push" ? `<span class="psh">➖</span>` : `<span class="wrg">✗</span>`;
       const ln = spreadLeague() ? state.lines.get(g.id) : null;
       const vs = ln ? ` <span class="vsline">(line: ${esc(ln.fav_id === mine.id ? mine.name : other.name)} by ${Math.abs(+ln.points)})</span>` : "";
-      lines.push(`${mark} ${esc(mine.name)} ${mine.winner ? "beat" : "lost to"} ${esc(other.name)} ${mine.score}–${other.score}${vs}`);
+      const star = lockIds.has(g.id) ? `<b class="lockon">⭐${res === "win" ? ` +${LOCK_POINTS}` : ""}</b> ` : "";
+      lines.push(`${mark} ${star}${esc(mine.name)} ${mine.winner ? "beat" : "lost to"} ${esc(other.name)} ${mine.score}–${other.score}${vs}`);
     } else pending++;
   }
   return `${lines.length ? lines.join("<br>") : "No finished picks yet this week."}

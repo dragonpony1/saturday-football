@@ -128,19 +128,19 @@ export function isConfigured() {
 }
 
 export async function getLeagueById(id) {
-  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode,pick_mode,icon,icon_url,sport,scoring`);
+  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode,pick_mode,icon,icon_url,sport,scoring,locks_per_week`);
   return rows[0] || null;
 }
 
 export async function getLeague(passcode) {
-  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode,pick_mode,icon,icon_url,sport,scoring`);
+  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode,pick_mode,icon,icon_url,sport,scoring,locks_per_week`);
   return rows[0] || null;
 }
 
-export async function createLeague(name, passcode, pickMode, icon, sport, scoring) {
+export async function createLeague(name, passcode, pickMode, icon, sport, scoring, locksPerWeek) {
   const created = await rest("leagues", {
     method: "POST",
-    body: JSON.stringify({ name, passcode, pick_mode: pickMode, icon, sport: sport || "college", scoring: scoring || "winner" }),
+    body: JSON.stringify({ name, passcode, pick_mode: pickMode, icon, sport: sport || "college", scoring: scoring || "winner", locks_per_week: locksPerWeek ?? 0 }),
     headers: { Prefer: "return=representation" },
   });
   return created[0];
@@ -166,7 +166,7 @@ export function saveLines(rows) {
 
 // For players saved on a phone before leagues existed: look up which league they're in.
 export async function getPlayerLeague(playerId) {
-  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode,pick_mode,icon,icon_url,sport,scoring)`);
+  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode,pick_mode,icon,icon_url,sport,scoring,locks_per_week)`);
   return rows[0]?.leagues || null;
 }
 
@@ -239,13 +239,13 @@ export function listPlayers(leagueId) {
 }
 
 export function listAllPicks(leagueId) {
-  return rest(`picks?season=eq.${SEASON}&league_id=eq.${encodeURIComponent(leagueId)}&select=player_id,week,game_id,team_id`);
+  return rest(`picks?season=eq.${SEASON}&league_id=eq.${encodeURIComponent(leagueId)}&select=player_id,week,game_id,team_id,is_lock`);
 }
 
-export function savePick(playerId, week, gameId, teamId, leagueId) {
+export function savePick(playerId, week, gameId, teamId, leagueId, isLock = false) {
   return rest("picks", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates" },
-    body: JSON.stringify({ player_id: playerId, league_id: leagueId, season: SEASON, week, game_id: gameId, team_id: teamId, updated_at: new Date().toISOString() }),
+    body: JSON.stringify({ player_id: playerId, league_id: leagueId, season: SEASON, week, game_id: gameId, team_id: teamId, is_lock: isLock, updated_at: new Date().toISOString() }),
   });
 }
