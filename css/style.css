@@ -119,6 +119,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .rules li { margin: 10px 0; }
 .join h2 { font: 500 24px Oswald, sans-serif; margin: 0; color: var(--field); }
 .join label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+.join label[hidden] { display: none; } /* a display rule beats the hidden attribute */
 .join input { font: 17px "Source Sans 3", sans-serif; padding: 9px 10px; border: 1.5px solid var(--rule); border-radius: 6px; }
 .join button { background: var(--field); color: var(--chalk); border: 0; border-radius: 6px; padding: 11px; font: 500 18px Oswald, sans-serif; cursor: pointer; }
 .hint { color: var(--mute); font-size: 14px; margin: 8px 0 0; }
