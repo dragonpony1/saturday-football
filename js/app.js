@@ -21,6 +21,7 @@ const state = {
 (async function boot() {
   $("#tz").textContent = `v${VERSION} · ` + Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, " ");
   bindNav();
+  api.setSport(state.league?.sport || "college"); // college or NFL, per league
   try {
     state.calendar = await api.fetchCalendar();
   } catch {
@@ -364,13 +365,21 @@ function gameRow(g) {
   const status = g.state === "in" ? `<span class="status live">${g.detail}</span>`
                : g.state === "post" ? `<span class="status">${g.detail}</span>` : "";
   el.innerHTML = `<div class="teams">${teamLine(g.away)}${teamLine(g.home)}</div>
-    <div class="meta"><span class="tv">${g.tv}</span>${status}${infoBtnHtml()}</div>`;
+    <div class="meta"><span class="tv">${g.tv}</span>${spreadHtml(g)}${status}${infoBtnHtml()}</div>`;
   bindInfoBtn(el, g);
   return el;
 }
 
 // The ⓘ button opens the full scouting-report page for a game.
 function infoBtnHtml() { return `<button type="button" class="infobtn">ⓘ game info</button>`; }
+
+// A compact spread chip: "ALA by 28.5" — only when a line exists and the game
+// hasn't started, so a finished card stays about the final score.
+function spreadHtml(g) {
+  if (!g.line || g.state !== "pre") return "";
+  const m = /^(.+?)\s*-([\d.]+)$/.exec(g.line);
+  return `<span class="spread">${esc(m ? `${m[1]} by ${m[2]}` : g.line)}</span>`;
+}
 function bindInfoBtn(el, g) {
   const b = el.querySelector(".infobtn");
   if (b) b.onclick = () => openGameInfo(g);
@@ -464,7 +473,8 @@ function renderPicks(entry) {
   const board = state.games.filter(g => onBoard(g, state.league.pick_mode));
   const made = board.filter(g => mine.has(g.id)).length;
   const weekDone = board.length > 0 && board.every(g => g.state === "post");
-  const modeLabel = { main: " · main conferences", big12ranked: " · Big 12 + ranked", ranked: " · ranked matchups only" }[state.league.pick_mode] || "";
+  const modeLabel = api.getSport() === "nfl" ? " · NFL"
+    : { main: " · main conferences", big12ranked: " · Big 12 + ranked", ranked: " · ranked matchups only" }[state.league.pick_mode] || "";
 
   el.innerHTML = `<div class="lockbar ${weekDone ? "locked" : ""}">
     <span>${weekDone ? "This week is in the books." : "Each game locks at its kickoff."}</span>
@@ -521,7 +531,7 @@ function pickRow(g, picked, locked, famPicks) {
     if (parts.length) fam = `<div class="fampicks">${parts.join("&ensp;")}</div>`;
   }
   el.innerHTML = `<div class="pickpair">${btn(g.away)}${btn(g.home)}</div>
-    <div class="meta"><span class="tv">${g.tv}</span>
+    <div class="meta"><span class="tv">${g.tv}</span>${spreadHtml(g)}
     ${g.state !== "pre" ? `<span class="status ${g.state === "in" ? "live" : ""}">${g.detail}</span>` : `<span class="status">${locked ? "Locked" : ""}</span>`}${infoBtnHtml()}</div>${fam}`;
   el.querySelectorAll(".pickbtn").forEach(b => b.onclick = () => makePick(g, b.dataset.team));
   bindInfoBtn(el, g);
@@ -548,7 +558,7 @@ function renderJoin() {
   const mine = state.memberships.filter(m => !state.league || m.league.id !== state.league.id);
   $("#content").innerHTML = `${state.player && state.league ? `<p class="hint schedtip"><button type="button" class="linkbtn" id="backtoleague">← Back to ${esc(state.league.name)}</button> &nbsp;·&nbsp; <button type="button" class="linkbtn" id="renameme">Change my name</button></p>` : ""}
   ${mine.length ? `<div class="join" id="myleagues"><h2>Your leagues</h2>
-    ${mine.map(m => `<button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.icon || "🏈")} ${esc(m.league.name)}<small>as ${esc(m.player.name)} — tap to switch</small></button>`).join("")}
+    ${mine.map(m => `<button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.icon || "🏈")} ${esc(m.league.name)}<small>${m.league.sport === "nfl" ? "NFL · " : ""}as ${esc(m.player.name)} — tap to switch</small></button>`).join("")}
   </div>` : ""}
   <form class="join" id="join">
     <h2>Join a league</h2>
@@ -562,6 +572,10 @@ function renderJoin() {
     <h2>Start a new league</h2>
     <label>League name<input name="lname" required autocomplete="off" placeholder="The Smith Family"></label>
     <label>League emoji (optional)<input name="icon" maxlength="12" autocomplete="off" placeholder="🏈"></label>
+    <label>Which football<select name="sport">
+      <option value="college">College football</option>
+      <option value="nfl">NFL</option>
+    </select></label>
     <label>Make up a passcode<input name="code" required autocomplete="off" placeholder="something easy to text"></label>
     <label>Your name<input name="name" required autocomplete="off"></label>
     <label>Games to pick<select name="mode">
@@ -599,6 +613,13 @@ function renderJoin() {
     if (m) switchLeague(m);
   });
   $("#showcreate").onclick = () => { $("#join").hidden = true; $("#create").hidden = false; };
+  // The board picker only means something for college — the NFL slate is small.
+  const sportSel = document.querySelector('#create select[name="sport"]');
+  const modeLabel = document.querySelector('#create select[name="mode"]')?.closest("label");
+  if (sportSel && modeLabel) {
+    const syncMode = () => { modeLabel.hidden = sportSel.value === "nfl"; };
+    sportSel.onchange = syncMode; syncMode();
+  }
 
   $("#join").onsubmit = async e => {
     e.preventDefault();
@@ -620,7 +641,7 @@ function renderJoin() {
     const name = f.get("name").trim();
     if (code.length < 4) { $("#banner").textContent = "Make the passcode at least 4 characters."; return; }
     try {
-      const league = await api.createLeague(lname, code, f.get("mode") || "all", iconTrim((f.get("icon") || "").trim()) || "🏈");
+      const league = await api.createLeague(lname, code, f.get("mode") || "all", iconTrim((f.get("icon") || "").trim()) || "🏈", f.get("sport") || "college");
       await joinLeague(league, name);
     } catch (err) {
       if (String(err.message).includes("409")) $("#banner").textContent = "A league already uses that passcode. If you just created it, reload and use Join with the same passcode — otherwise make up a different one.";
@@ -632,6 +653,7 @@ function renderJoin() {
 async function joinLeague(league, name) {
   // Create the player first, so nothing is saved locally unless the join fully worked.
   const player = await api.getOrCreatePlayer(name, league.id);
+  const sportChanged = (league.sport || "college") !== api.getSport();
   state.player = player;
   localStorage.setItem("player", JSON.stringify(state.player));
   state.memberships = state.memberships.filter(m => m.league.id !== league.id);
@@ -639,12 +661,14 @@ async function joinLeague(league, name) {
   rememberLeague(league);
   $("#banner").textContent = "";
   state.showJoin = false;
-  await loadLeague(); render();
+  await loadLeague();
+  if (sportChanged) await loadSportSchedule(); else render();
 }
 
 async function switchLeague(m) {
   const fresh = await api.getLeagueById(m.league.id).catch(() => m.league);
   if (!fresh) return dropDeadLeague(m.league.id);
+  const sportChanged = (fresh.sport || "college") !== api.getSport();
   state.player = m.player;
   localStorage.setItem("player", JSON.stringify(state.player));
   rememberLeague(fresh);
@@ -652,12 +676,13 @@ async function switchLeague(m) {
   $("#banner").textContent = "";
   state.showJoin = false;
   render();
-  await loadLeague().catch(showLeagueError); render();
+  await loadLeague().catch(showLeagueError);
+  if (sportChanged) await loadSportSchedule(); else render();
 }
 
 // Make this the active league and keep localStorage + the memberships list current.
 function rememberLeague(league) {
-  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all", icon: league.icon || "🏈", icon_url: league.icon_url || null };
+  state.league = { id: league.id, name: league.name, passcode: league.passcode, pick_mode: league.pick_mode || "all", icon: league.icon || "🏈", icon_url: league.icon_url || null, sport: league.sport || "college" };
   localStorage.setItem("league", JSON.stringify(state.league));
   state.memberships = state.memberships.map(m => m.league.id === league.id ? { ...m, league: state.league } : m);
   localStorage.setItem("memberships", JSON.stringify(state.memberships));
@@ -676,6 +701,20 @@ function dropDeadLeague(leagueId) {
 
 const normCode = s => String(s).trim().toLowerCase();
 
+// Reload the schedule when a league switch changes sports.
+async function loadSportSchedule() {
+  api.setSport(state.league?.sport || "college");
+  state.weekGames.clear();
+  try { state.calendar = await api.fetchCalendar(); }
+  catch { state.calendar = Array.from({ length: 18 }, (_, i) => ({ value: i + 1, label: `Week ${i + 1}` })); }
+  const now = Date.now();
+  const cur = state.calendar.find(c => c.end && now >= c.start && now <= c.end)
+           || state.calendar.find(c => c.end && now < c.end) || state.calendar[0];
+  state.week = cur.value; state.nowWeek = cur.value;
+  buildWeekStrip();
+  await loadWeek(state.week);
+}
+
 // Cap an icon at 3 visible characters without slicing an emoji in half.
 function iconTrim(s) {
   try {
@@ -690,6 +729,7 @@ const MAIN_CONFS = new Set(["1", "4", "5", "8", "9", "17"]);
 // Which games a league picks: its whole board, ranked matchups, Big 12 + ranked,
 // or main = main-conference matchups + every Big 12 game + anything ranked.
 function onBoard(g, mode) {
+  if (api.getSport() === "nfl") return true; // pro slate is small enough to pick every game
   const ranked = !!(g.home.rank || g.away.rank);
   if (mode === "ranked") return ranked;
   if (mode === "big12ranked") return ranked || g.home.conf === "4" || g.away.conf === "4";
@@ -704,7 +744,7 @@ function renderRules() {
   $("#content").innerHTML = `<div class="join rules">
     <h2>Rules &amp; scoring</h2>
     <ul>
-      <li><b>Pick every game on your league's board.</b> Some leagues pick every FBS game, some just the ranked matchups — My picks shows yours. Tap the team you think wins; it saves by itself.</li>
+      <li><b>Pick every game on your league's board.</b> College leagues pick a slice of the FBS slate (every game, ranked matchups, or the main conferences); NFL leagues pick all 16 games. My picks shows yours — tap the team you think wins and it saves by itself.</li>
       <li><b>1 point per correct pick.</b> Most points at the end of the season wins. Ties share the glory.</li>
       <li><b>Every game locks at its own kickoff.</b> Pick or change right up until the ball is in the air.</li>
       <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>

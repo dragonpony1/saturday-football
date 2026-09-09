@@ -61,6 +61,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .schedtip { text-align: center; margin: 10px 0 -8px; }
 .togglefinished { display: block; margin: 18px auto 0; }
 .infobtn { background: none; border: 0; color: var(--mute); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 0; }
+.spread { font-size: 12px; color: var(--mute); white-space: nowrap; }
 .gamecard { max-width: 430px; text-align: left; max-height: 85vh; overflow-y: auto; }
 .gvs { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .gteam { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }

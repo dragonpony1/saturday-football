@@ -1,13 +1,22 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY, SEASON, VERSION } from "./config.js";
 
-const ESPN = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard";
+// Which sport the app is showing. Leagues carry this; the app sets it at boot
+// and whenever you switch leagues.
+let SPORT = "college";
+export function setSport(s) {
+  if (s !== SPORT) { SPORT = s === "nfl" ? "nfl" : "college"; weekCache.clear(); summaryCache.clear(); }
+}
+export function getSport() { return SPORT; }
+
+const path = () => SPORT === "nfl" ? "nfl" : "college-football";
+const espnUrl = extra => `https://site.api.espn.com/apis/site/v2/sports/football/${path()}/scoreboard?${SPORT === "nfl" ? "" : "groups=80&"}${extra}`;
 
 // ---------- ESPN schedule ----------
 
 const weekCache = new Map();
 
 export async function fetchCalendar() {
-  const json = await fetch(`${ESPN}?groups=80&dates=${SEASON}&limit=1`).then(r => r.json());
+  const json = await fetch(espnUrl(`dates=${SEASON}&limit=1`)).then(r => r.json());
   const cal = (json.leagues[0].calendar || []).find(c => c.label === "Regular Season");
   return (cal?.entries || []).map(e => ({
     value: +e.value, label: e.label, start: new Date(e.startDate), end: new Date(e.endDate),
@@ -17,7 +26,7 @@ export async function fetchCalendar() {
 export async function fetchWeek(week, { force = false } = {}) {
   const cached = weekCache.get(week);
   if (cached && !force && Date.now() - cached.at < 60_000) return cached.games;
-  const res = await fetch(`${ESPN}?groups=80&seasontype=2&dates=${SEASON}&week=${week}&limit=400`);
+  const res = await fetch(espnUrl(`seasontype=2&dates=${SEASON}&week=${week}&limit=400`));
   if (!res.ok) throw new Error(`ESPN ${res.status}`);
   const games = parseGames(await res.json());
   weekCache.set(week, { games, at: Date.now() });
@@ -68,7 +77,7 @@ const summaryCache = new Map();
 
 export async function fetchGameSummary(id) {
   if (summaryCache.has(id)) return summaryCache.get(id);
-  const j = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${id}`).then(r => r.json());
+  const j = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/${path()}/summary?event=${id}`).then(r => r.json());
   const out = {
     proj: j.predictor ? {
       home: parseFloat(j.predictor.homeTeam?.gameProjection) || null,
@@ -119,25 +128,25 @@ export function isConfigured() {
 }
 
 export async function getLeagueById(id) {
-  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode,pick_mode,icon,icon_url`);
+  const rows = await rest(`leagues?id=eq.${encodeURIComponent(id)}&select=id,name,passcode,pick_mode,icon,icon_url,sport`);
   return rows[0] || null;
 }
 
 export async function getLeague(passcode) {
-  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode,pick_mode,icon,icon_url`);
+  const rows = await rest(`leagues?passcode=eq.${encodeURIComponent(passcode)}&select=id,name,passcode,pick_mode,icon,icon_url,sport`);
   return rows[0] || null;
 }
 
-export async function createLeague(name, passcode, pickMode, icon) {
+export async function createLeague(name, passcode, pickMode, icon, sport) {
   const created = await rest("leagues", {
-    method: "POST", body: JSON.stringify({ name, passcode, pick_mode: pickMode, icon }), headers: { Prefer: "return=representation" },
+    method: "POST", body: JSON.stringify({ name, passcode, pick_mode: pickMode, icon, sport: sport || "college" }), headers: { Prefer: "return=representation" },
   });
   return created[0];
 }
 
 // For players saved on a phone before leagues existed: look up which league they're in.
 export async function getPlayerLeague(playerId) {
-  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode,pick_mode,icon,icon_url)`);
+  const rows = await rest(`players?id=eq.${encodeURIComponent(playerId)}&select=league_id,leagues(id,name,passcode,pick_mode,icon,icon_url,sport)`);
   return rows[0]?.leagues || null;
 }
 
