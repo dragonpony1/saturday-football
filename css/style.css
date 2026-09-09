@@ -20,7 +20,7 @@ h1 { font: 600 28px/1.05 Oswald, sans-serif; letter-spacing: .5px; margin: 0; fl
   .who { width: 100%; margin-top: 2px; }
   #who { max-width: 58vw; }
 }
-.who button { background: none; border: 0; color: var(--chalk); text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0 0 0 6px; }
+.who button { background: none; border: 0; color: var(--chalk); text-decoration: underline; cursor: pointer; font-size: 13px; padding: 0 0 0 6px; white-space: nowrap; flex: 0 0 auto; }
 .who .sharebtn { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; border: 1px solid rgba(244,244,241,.45); border-radius: 999px; padding: 4px 11px; margin-left: 8px; font: 500 13px Oswald, sans-serif; letter-spacing: .3px; }
 .who .sharebtn:hover { background: rgba(244,244,241,.12); }
 
