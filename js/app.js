@@ -631,7 +631,7 @@ function renderJoin() {
   const mine = state.memberships.filter(m => !state.league || m.league.id !== state.league.id);
   $("#content").innerHTML = `${state.player && state.league ? `<p class="hint schedtip"><button type="button" class="linkbtn" id="backtoleague">← Back to ${esc(state.league.name)}</button> &nbsp;·&nbsp; <button type="button" class="linkbtn" id="renameme">Change my name</button></p>` : ""}
   ${mine.length ? `<div class="join" id="myleagues"><h2>Your leagues</h2>
-    ${mine.map(m => `<button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.icon || "🏈")} ${esc(m.league.name)}<small>${m.league.sport === "nfl" ? "NFL · " : ""}as ${esc(m.player.name)} — tap to switch</small></button>`).join("")}
+    ${mine.map(m => `<button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.icon || "🏈")} ${esc(m.league.name)}<small>${m.league.sport === "nfl" ? "NFL · " : "College · "}as ${esc(m.player.name)} — tap to switch</small></button>`).join("")}
   </div>` : ""}
   <form class="join" id="join">
     <h2>Join a league</h2>
@@ -780,10 +780,10 @@ async function joinLeague(league, name) {
   state.memberships = state.memberships.filter(m => m.league.id !== league.id);
   state.memberships.push({ league, player });
   rememberLeague(league);
-  $("#banner").textContent = "";
   state.showJoin = false;
   await loadLeague();
   if (sportChanged) await loadSportSchedule(); else render();
+  $("#banner").textContent = `You are in ${league.name} — ${(league.sport || "college") === "nfl" ? "NFL" : "college"} games.`;
 }
 
 async function switchLeague(m) {
