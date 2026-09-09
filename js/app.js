@@ -28,11 +28,19 @@ const state = {
   } catch {
     state.calendar = Array.from({ length: 15 }, (_, i) => ({ value: i + 1, label: `Week ${i + 1}` }));
   }
-  checkForUpdate(); setInterval(checkForUpdate, 5 * 60_000);
+  // Everything on a timer sleeps while the app is off screen, so a phone in
+  // your pocket does no work at all.
+  const whenAwake = fn => () => { if (!document.hidden) fn(); };
+  checkForUpdate(); setInterval(whenAwake(checkForUpdate), 5 * 60_000);
   setTimeout(maybeInstallTip, 2000); // give the join greeting first claim on the banner
-  setInterval(refreshChat, 30_000); // keep the league chat fresh while it's on screen
-  setInterval(liveTick, 60_000);    // live scores + standings while the app is open
-  setInterval(updateChatPulse, 45_000); updateChatPulse(); // chat ribbon + unread badge
+  setInterval(whenAwake(refreshChat), 30_000); // keep the league chat fresh while it's on screen
+  setInterval(liveTick, 60_000);    // live scores + standings (checks visibility itself)
+  setInterval(whenAwake(updateChatPulse), 45_000); updateChatPulse(); // chat ribbon + unread badge
+  // Coming back to the app should feel instant and current.
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) return;
+    liveTick(); updateChatPulse(); checkForUpdate();
+  });
   const now = Date.now();
   const cur = state.calendar.find(c => c.end && now >= c.start && now <= c.end)
            || state.calendar.find(c => c.end && now < c.end) || state.calendar[0];
