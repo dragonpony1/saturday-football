@@ -1053,8 +1053,10 @@ function standingsHtml() {
   for (const games of state.weekGames.values())
     for (const g of games) if (g.state === "post") byId.set(g.id, g);
 
-  // What each player has banked (and blown) in the week on screen. It builds
-  // all week and starts blank again when a new week opens.
+  // What each player has banked (and blown) TODAY. It builds through the day
+  // and starts blank again tomorrow.
+  const today = new Date().toDateString();
+  const finishedToday = new Set([...byId.values()].filter(g => g.date.toDateString() === today).map(g => g.id));
 
   const rows = state.players.map(pl => {
     const mine = state.picks.filter(p => p.player_id === pl.id);
@@ -1068,7 +1070,7 @@ function standingsHtml() {
       byWeek[p.week].played++;
       const worth = pickPoints(p, res);
       total += worth; byWeek[p.week].right += worth;
-      if (p.week === state.week) {
+      if (finishedToday.has(p.game_id)) {
         gainedWeek += worth;
         if (res === "loss") missedWeek++;
       }
@@ -1092,7 +1094,7 @@ function standingsHtml() {
         <td class="num">${r.thisWeek ? `${r.thisWeek.right} / ${r.thisWeek.played}` : "—"}</td>
         <td class="num">${r.decided ? Math.round(100 * r.total / r.decided) + "%" : "—"}</td></tr>
         ${state.recapPlayer === r.id ? `<tr class="recaprow"><td colspan="5">${recapHtml(r.id)}</td></tr>` : ""}`).join("")}</tbody></table>
-      <p class="hint">One point per ${spreadLeague() ? "pick that covers the spread (a push scores for nobody)" : "correct pick"}${locksAllowed() ? `, ${LOCK_POINTS} for a ⭐ lock that hits` : ""}${cougarsAllowed() ? `, and a 🐾 Cougar Tail pays ${COUGAR_WIN} or costs ${Math.abs(COUGAR_LOSS)}` : ""}. Live as games finish — tap any player for their week.${anyWeek ? ` <b class="delta up">+N</b> is what they've banked this week; <b class="missed">✗N</b> is this week's misses.` : ""}</p>`
+      <p class="hint">One point per ${spreadLeague() ? "pick that covers the spread (a push scores for nobody)" : "correct pick"}${locksAllowed() ? `, ${LOCK_POINTS} for a ⭐ lock that hits` : ""}${cougarsAllowed() ? `, and a 🐾 Cougar Tail pays ${COUGAR_WIN} or costs ${Math.abs(COUGAR_LOSS)}` : ""}. Live as games finish — tap any player for their week.${anyWeek ? ` <b class="delta up">+N</b> is what they've banked today; <b class="missed">✗N</b> is today's misses.` : ""}</p>`
     : `<p class="note"><b>Nobody has joined yet.</b><br>Share the link and the passcode.</p>`;
 }
 
