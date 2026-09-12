@@ -153,7 +153,13 @@ function updateScoreTicker() {
   const ranked = live.filter(g => g.home.rank || g.away.rank);
   const followed = state.followGame ? live.find(g => g.id === state.followGame) : null;
   if (state.followGame && !followed) { state.followGame = null; localStorage.removeItem("followGame"); } // game over
-  const show = (ranked.length >= 2 ? ranked : live).filter(g => g !== followed).slice(0, 12);
+  // Your own games always ride the ticker — that's where the colours matter.
+  const myPicks = new Map(state.picks
+    .filter(p => p.player_id === state.player?.id && p.week === state.nowWeek)
+    .map(p => [p.game_id, p.team_id]));
+  const isMine = g => myPicks.has(g.id);
+  const pool = live.filter(isMine).concat((ranked.length >= 2 ? ranked : live).filter(g => !isMine(g)));
+  const show = [...new Set(pool)].filter(g => g !== followed).slice(0, 12);
   if (!show.length && !followed) { bar.hidden = true; return; }
   const rk = t => t.rank ? `#${t.rank} ` : "";
   let lead = "";
@@ -168,9 +174,20 @@ function updateScoreTicker() {
     const other = rankedSide === g.away ? g.home : g.away;
     return (+other.score || 0) > (+rankedSide.score || 0);
   };
+  // How your pick is doing right now: ahead, behind, or level.
+  const myStanding = g => {
+    const teamId = myPicks.get(g.id);
+    if (!teamId) return null;
+    const mine = g.home.id === teamId ? g.home : g.away;
+    const other = g.home.id === teamId ? g.away : g.home;
+    const d = (+mine.score || 0) - (+other.score || 0);
+    return { team: mine.name, cls: d > 0 ? "winning" : d < 0 ? "losing" : "tied", mark: d > 0 ? "▲" : d < 0 ? "▼" : "=" };
+  };
   bar.hidden = false;
   $("#scoretext").innerHTML = lead + show.map(g => {
     const txt = `${rk(g.away)}${esc(g.away.name)} ${g.away.score ?? 0}–${g.home.score ?? 0} ${rk(g.home)}${esc(g.home.name)} (${esc(g.detail)})`;
+    const me = myStanding(g);
+    if (me) return `<span class="${me.cls}">${me.mark} ${txt} · your pick: ${esc(me.team)}</span>`;
     return isUpset(g) ? `<span class="upset">🚨 UPSET ALERT: ${txt}</span>` : `🏈 ${txt}`;
   }).join("&ensp;•&ensp;");
 }
@@ -991,6 +1008,7 @@ function renderRules() {
       <li><b>Changed your mind?</b> You can switch a pick any time before it locks — the app asks first so a stray thumb can't do it.</li>
       <li><b>Everyone's picks show under each game</b> — even before kickoff. Copy at your own risk; the scoreboard remembers who thought of it first.</li>
       <li><b>The League tab</b> holds the standings and the league chat. Standings add up the whole season; games still being played don't count until they're final.</li>
+      <li><b>The black scoreboard strip up top</b> colours your games: <b style="color:#2C7A3F">green ▲</b> when the team you picked is ahead, <b style="color:#C8352E">red ▼</b> when they're behind, and yellow when an unranked team is upsetting a ranked one.</li>
       <li><b>⭐ Locks.</b> If your league uses them, you get a few every week: tap "Make this a lock" on a game you've already picked. A lock that hits is worth <b>${LOCK_POINTS} points</b> instead of 1 — a lock that misses is worth nothing. Pick your spots. You can move them around until the game kicks off.</li>
       <li><b>🐾 The Cougar Tail.</b> One a week, on any game you've picked. Hit it and you bank <b>${COUGAR_WIN} points</b> — miss and it <b>costs you ${Math.abs(COUGAR_LOSS)}</b>. A game can be a lock or a Cougar Tail, never both. Choose violence accordingly.</li>
       <li><b>Tied?</b> The 🎲 tie-breaker button on the League tab posts a public roll (1–100) into the chat. <b>One roll per week, locked in</b> — highest roll wins, no take-backs.</li>

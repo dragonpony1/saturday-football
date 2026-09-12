@@ -69,7 +69,7 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 
 .schedtip { text-align: center; margin: 10px 0 -8px; }
 .togglefinished { display: block; margin: 18px auto 0; }
-.infobtn { background: none; border: 0; color: var(--mute); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 0; }
+.infobtn { background: none; border: 0; color: var(--line); font: 600 14px "Source Sans 3", sans-serif; text-decoration: underline; cursor: pointer; padding: 2px 0; }
 .spread { font-size: 12px; color: var(--mute); white-space: nowrap; }
 .lockbtn { background: none; border: 1px solid var(--rule); border-radius: 999px; color: var(--mute); font-size: 12px; padding: 2px 9px; cursor: pointer; white-space: nowrap; }
 .lockbtn.on { background: #fff4c2; border-color: var(--line); color: var(--ink); font-weight: 700; }
@@ -173,6 +173,9 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .scoreticker { background: #000; color: #fff; font: 500 14px Oswald, sans-serif; letter-spacing: .3px; }
 .scoreticker .upset { color: #ffee55; font-weight: 700; }
 .scoreticker .followseg { color: #7fd4ff; font-weight: 700; }
+.scoreticker .winning { color: #5dd879; font-weight: 700; }
+.scoreticker .losing { color: #ff7b6b; font-weight: 700; }
+.scoreticker .tied { color: #fff; font-weight: 700; }
 
 @media (prefers-reduced-motion: no-preference) {
   .pickbtn { transition: background .12s, border-color .12s; }
