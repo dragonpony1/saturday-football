@@ -212,8 +212,12 @@ function updateScoreTicker() {
   setTicker($("#scoretext"), lead + show.map(g => {
     const txt = `${rk(g.away)}${esc(g.away.name)} ${g.away.score ?? 0}–${g.home.score ?? 0} ${rk(g.home)}${esc(g.home.name)} (${esc(period(g.detail))})`;
     const me = myStanding(g);
-    if (me) return `<span class="${me.cls}">${me.mark} ${txt} · your pick: ${esc(me.team)}</span>`;
-    return isUpset(g) ? `<span class="upset">🚨 UPSET ALERT: ${txt}</span>` : `🏈 ${txt}`;
+    const upset = isUpset(g);
+    // Your own game stays green/red — but an upset still gets shouted about,
+    // in yellow, right alongside it.
+    if (me) return `${upset ? `<span class="upset">🚨 UPSET</span> ` : ""}`
+      + `<span class="${me.cls}">${me.mark} ${txt} · your pick: ${esc(me.team)}</span>`;
+    return upset ? `<span class="upset">🚨 UPSET ALERT: ${txt}</span>` : `🏈 ${txt}`;
   }).join("&ensp;•&ensp;"));
 }
 
