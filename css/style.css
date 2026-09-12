@@ -24,8 +24,10 @@ h1 { font: 600 28px/1.05 Oswald, sans-serif; letter-spacing: .5px; margin: 0; fl
 .who .sharebtn { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; border: 1px solid rgba(244,244,241,.45); border-radius: 999px; padding: 4px 11px; margin-left: 8px; font: 500 13px Oswald, sans-serif; letter-spacing: .3px; }
 .who .sharebtn:hover { background: rgba(244,244,241,.12); }
 
-.tabs { display: flex; gap: 4px; margin-top: 14px; }
-.tabs button { background: none; border: 0; color: var(--chalk); font: 500 17px Oswald, sans-serif; letter-spacing: .4px; padding: 8px 12px 10px; cursor: pointer; opacity: .7; border-bottom: 3px solid transparent; }
+.tabs { display: flex; gap: 4px; margin-top: 14px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { background: none; border: 0; color: var(--chalk); font: 500 17px Oswald, sans-serif; letter-spacing: .4px; padding: 8px 12px 10px; cursor: pointer; opacity: .7; border-bottom: 3px solid transparent; white-space: nowrap; flex: 0 0 auto; }
+@media (max-width: 460px) { .tabs button { font-size: 15px; padding: 8px 7px 10px; letter-spacing: .2px; } }
 .tabs button[aria-pressed=true] { opacity: 1; border-bottom-color: var(--line); }
 
 .weeks { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 12px; scrollbar-width: none; }
