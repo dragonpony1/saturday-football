@@ -134,6 +134,19 @@ async function rest(path, opts = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+// Supabase returns at most 1000 rows per request, so anything that can grow
+// past that (a season of picks) has to be walked a page at a time.
+async function restAll(path) {
+  const out = [];
+  for (let start = 0; ; start += 1000) {
+    const chunk = await rest(path, { headers: { Range: `${start}-${start + 999}` } });
+    if (!Array.isArray(chunk) || !chunk.length) break;
+    out.push(...chunk);
+    if (chunk.length < 1000) break;
+  }
+  return out;
+}
+
 export function isConfigured() {
   return !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_ANON_KEY.includes("YOUR-ANON");
 }
@@ -258,7 +271,7 @@ export function listPlayers(leagueId) {
 }
 
 export function listAllPicks(leagueId) {
-  return rest(`picks?season=eq.${SEASON}&league_id=eq.${encodeURIComponent(leagueId)}&select=player_id,week,game_id,team_id,is_lock,is_cougar`);
+  return restAll(`picks?season=eq.${SEASON}&league_id=eq.${encodeURIComponent(leagueId)}&select=player_id,week,game_id,team_id,is_lock,is_cougar&order=updated_at`);
 }
 
 export function savePick(playerId, week, gameId, teamId, leagueId, flags = {}) {
