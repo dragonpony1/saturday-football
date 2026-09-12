@@ -160,7 +160,16 @@ function updateScoreTicker() {
   const isMine = g => myPicks.has(g.id);
   const pool = live.filter(isMine).concat((ranked.length >= 2 ? ranked : live).filter(g => !isMine(g)));
   const show = [...new Set(pool)].filter(g => g !== followed).slice(0, 12);
-  if (!show.length && !followed) { bar.hidden = true; return; }
+  // Nothing in progress? Say so, and point at the next kickoff, so an empty
+  // strip never looks like a broken one.
+  if (!show.length && !followed) {
+    const next = games.filter(g => g.state === "pre" && !g.tbd).sort((a, b) => a.date - b.date)[0];
+    if (!next) { bar.hidden = true; return; }
+    bar.hidden = false;
+    $("#scoretext").innerHTML = `No games in progress · next up: ${esc(next.away.name)} at ${esc(next.home.name)}, `
+      + `${next.date.toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}`;
+    return;
+  }
   const rk = t => t.rank ? `#${t.rank} ` : "";
   let lead = "";
   if (followed) {
