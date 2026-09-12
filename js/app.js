@@ -143,6 +143,19 @@ async function updateRollBtn() {
   } catch {}
 }
 
+// Write text into a ticker strip: two copies for a seamless loop, and never
+// redraw identical content (a redraw restarts the scroll and looks like the
+// score vanished mid-crawl).
+function setTicker(el, html) {
+  if (!el || el.dataset.key === html) return;
+  el.dataset.key = html;
+  el.innerHTML = `<span class="run">${html}</span><span class="run" aria-hidden="true">${html}</span>`;
+  requestAnimationFrame(() => {
+    const w = el.scrollWidth / 2;
+    el.style.animationDuration = Math.max(16, Math.round(w / 55)) + "s";
+  });
+}
+
 // The live-scores ticker: ranked games while the slate is busy, everything
 // that's on when it isn't.
 function updateScoreTicker() {
@@ -166,11 +179,14 @@ function updateScoreTicker() {
     const next = games.filter(g => g.state === "pre" && !g.tbd).sort((a, b) => a.date - b.date)[0];
     if (!next) { bar.hidden = true; return; }
     bar.hidden = false;
-    $("#scoretext").innerHTML = `No games in progress · next up: ${esc(next.away.name)} at ${esc(next.home.name)}, `
-      + `${next.date.toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}`;
+    setTicker($("#scoretext"), `No games in progress · next up: ${esc(next.away.name)} at ${esc(next.home.name)}, `
+      + `${next.date.toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}`);
     return;
   }
   const rk = t => t.rank ? `#${t.rank} ` : "";
+  // Drop the ticking game clock — it changes every refresh and would restart
+  // the crawl constantly. The quarter is enough at a glance.
+  const period = d => String(d || "").replace(/^\d+:\d+\s*-\s*/, "");
   let lead = "";
   if (followed) {
     const g = followed;
@@ -193,12 +209,12 @@ function updateScoreTicker() {
     return { team: mine.name, cls: d > 0 ? "winning" : d < 0 ? "losing" : "tied", mark: d > 0 ? "▲" : d < 0 ? "▼" : "=" };
   };
   bar.hidden = false;
-  $("#scoretext").innerHTML = lead + show.map(g => {
-    const txt = `${rk(g.away)}${esc(g.away.name)} ${g.away.score ?? 0}–${g.home.score ?? 0} ${rk(g.home)}${esc(g.home.name)} (${esc(g.detail)})`;
+  setTicker($("#scoretext"), lead + show.map(g => {
+    const txt = `${rk(g.away)}${esc(g.away.name)} ${g.away.score ?? 0}–${g.home.score ?? 0} ${rk(g.home)}${esc(g.home.name)} (${esc(period(g.detail))})`;
     const me = myStanding(g);
     if (me) return `<span class="${me.cls}">${me.mark} ${txt} · your pick: ${esc(me.team)}</span>`;
     return isUpset(g) ? `<span class="upset">🚨 UPSET ALERT: ${txt}</span>` : `🏈 ${txt}`;
-  }).join("&ensp;•&ensp;");
+  }).join("&ensp;•&ensp;"));
 }
 
 // The chat ribbon at the top and the unread badge on the League tab.
@@ -217,10 +233,10 @@ async function updateChatPulse() {
     if (bar) {
       if (showTip) {
         bar.hidden = false;
-        $("#tickertext").textContent = "📲 Make it feel like a real app: add it to your home screen — tap here to see how";
+        setTicker($("#tickertext"), "📲 Make it feel like a real app: add it to your home screen — tap here to see how");
       } else {
         bar.hidden = !last;
-        if (last) $("#tickertext").textContent = `💬 ${last.players?.name || "?"}: ${last.body}`;
+        if (last) setTicker($("#tickertext"), `💬 ${esc(last.players?.name || "?")}: ${esc(last.body)}`);
       }
     }
     const seen = +localStorage.getItem("chatread-" + state.league.id) || 0;
