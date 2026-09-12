@@ -1061,21 +1061,24 @@ function standingsHtml() {
   const rows = state.players.map(pl => {
     const mine = state.picks.filter(p => p.player_id === pl.id);
     const byWeek = {};
-    let total = 0, decided = 0, gainedWeek = 0, missedWeek = 0;
+    let total = 0, decided = 0, correct = 0, gainedWeek = 0, missedWeek = 0;
     for (const p of mine) {
       const res = pickResult(byId.get(p.game_id), p.team_id);
       if (!res || res === "push") continue; // pushes score for nobody
       decided++;
-      byWeek[p.week] = byWeek[p.week] || { right: 0, played: 0 };
+      byWeek[p.week] = byWeek[p.week] || { right: 0, played: 0, pts: 0 };
       byWeek[p.week].played++;
       const worth = pickPoints(p, res);
-      total += worth; byWeek[p.week].right += worth;
+      total += worth; byWeek[p.week].pts += worth;
+      // Hit rate counts picks, not points — locks and Cougar Tails are worth
+      // more than one, which used to push it past 100%.
+      if (res === "win") { correct++; byWeek[p.week].right++; }
       if (finishedToday.has(p.game_id)) {
         gainedWeek += worth;
         if (res === "loss") missedWeek++;
       }
     }
-    return { id: pl.id, name: pl.name, total, decided, byWeek, gainedWeek, missedWeek, thisWeek: byWeek[state.week] };
+    return { id: pl.id, name: pl.name, total, decided, correct, byWeek, gainedWeek, missedWeek, thisWeek: byWeek[state.week] };
   }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 
   const anyWeek = rows.some(r => r.gainedWeek || r.missedWeek);
@@ -1092,7 +1095,7 @@ function standingsHtml() {
       <tbody>${rows.map((r, i) => `<tr data-pid="${r.id}" class="${state.player && r.name === state.player.name ? "me" : ""}">
         <td class="pos">${i + 1}</td><td>${esc(r.name)}</td><td class="num big">${r.total}${weekTag(r)}</td>
         <td class="num">${r.thisWeek ? `${r.thisWeek.right} / ${r.thisWeek.played}` : "—"}</td>
-        <td class="num">${r.decided ? Math.round(100 * r.total / r.decided) + "%" : "—"}</td></tr>
+        <td class="num">${r.decided ? Math.round(100 * r.correct / r.decided) + "%" : "—"}</td></tr>
         ${state.recapPlayer === r.id ? `<tr class="recaprow"><td colspan="5">${recapHtml(r.id)}</td></tr>` : ""}`).join("")}</tbody></table>
       <p class="hint">One point per ${spreadLeague() ? "pick that covers the spread (a push scores for nobody)" : "correct pick"}${locksAllowed() ? `, ${LOCK_POINTS} for a ⭐ lock that hits` : ""}${cougarsAllowed() ? `, and a 🐾 Cougar Tail pays ${COUGAR_WIN} or costs ${Math.abs(COUGAR_LOSS)}` : ""}. Live as games finish — tap any player for their week.${anyWeek ? ` <b class="delta up">+N</b> is what they've banked today; <b class="missed">✗N</b> is today's misses.` : ""}</p>`
     : `<p class="note"><b>Nobody has joined yet.</b><br>Share the link and the passcode.</p>`;
