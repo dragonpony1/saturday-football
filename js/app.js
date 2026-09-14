@@ -785,7 +785,21 @@ function renderJoin() {
   document.querySelectorAll(".leaguehide").forEach(b => b.onclick = () => {
     const m = state.memberships.find(x => x.league.id === b.dataset.hide);
     if (!m) return;
-    if (!confirm(`Remove ${m.league.name} from this phone? Your picks stay — rejoin any time with the passcode.`)) return;
+    // First tap only arms it — a stray thumb shouldn't clear a league.
+    if (!b.dataset.armed) {
+      document.querySelectorAll(".leaguehide").forEach(o => { delete o.dataset.armed; o.textContent = "✕"; o.classList.remove("armed"); });
+      b.dataset.armed = "1";
+      b.textContent = "Remove?";
+      b.classList.add("armed");
+      setTimeout(() => { if (b.isConnected && b.dataset.armed) { delete b.dataset.armed; b.textContent = "✕"; b.classList.remove("armed"); } }, 5000);
+      return;
+    }
+    if (!confirm(`Remove ${m.league.name} from this phone?
+
+The league and your picks are NOT deleted — everyone else keeps playing, and you can rejoin any time with the passcode ${m.league.passcode}.`)) {
+      delete b.dataset.armed; b.textContent = "✕"; b.classList.remove("armed");
+      return;
+    }
     state.memberships = state.memberships.filter(x => x.league.id !== m.league.id);
     localStorage.setItem("memberships", JSON.stringify(state.memberships));
     if (state.league?.id === m.league.id) {
