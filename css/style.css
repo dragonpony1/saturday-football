@@ -140,6 +140,10 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 .join .linkbtn { background: none; color: var(--field); font: inherit; font-weight: 600; padding: 0; width: auto; border-radius: 0; }
 .leaguebtn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; background: var(--chalk); border: 1.5px solid var(--field); color: var(--field); border-radius: 6px; padding: 10px 12px; font: 600 17px "Source Sans 3", sans-serif; cursor: pointer; text-align: left; }
 .leaguebtn small { font: 400 13px "Source Sans 3", sans-serif; color: var(--mute); }
+.leaguerow { display: flex; align-items: stretch; gap: 6px; }
+.leaguerow .leaguebtn { flex: 1; }
+.leaguehide { flex: 0 0 auto; background: none; border: 1.5px solid var(--rule); border-radius: 6px; color: var(--mute); font-size: 15px; padding: 0 12px; cursor: pointer; }
+.leaguehide:hover { border-color: var(--line); color: var(--line); }
 .tlogo { width: 22px; height: 22px; object-fit: contain; flex: 0 0 22px; }
 .updatebar { background: var(--line); border-left-color: var(--field-deep); padding: 0; }
 .updatebar .linkbtn { display: block; width: 100%; background: none; border: 0; color: #fff; font: 600 18px Oswald, sans-serif; letter-spacing: .4px; padding: 14px 12px; text-decoration: none; cursor: pointer; text-align: center; }

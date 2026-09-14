@@ -707,7 +707,10 @@ function renderJoin() {
 
   $("#content").innerHTML = `${state.player && state.league ? `<p class="hint schedtip"><button type="button" class="linkbtn" id="backtoleague">← Back to ${esc(state.league.name)}</button> &nbsp;·&nbsp; <button type="button" class="linkbtn" id="renameme">Change my name</button></p>` : ""}
   ${mine.length ? `<div class="join" id="myleagues"><h2>Your leagues</h2>
-    ${mine.map(m => `<button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.icon || "🏈")} ${esc(m.league.name)}<small>${m.league.sport === "nfl" ? "NFL · " : "College · "}as ${esc(m.player.name)} — tap to switch</small></button>`).join("")}
+    ${mine.map(m => `<div class="leaguerow">
+      <button type="button" class="leaguebtn" data-league="${m.league.id}">${esc(m.league.icon || "🏈")} ${esc(m.league.name)}<small>${m.league.sport === "nfl" ? "NFL · " : "College · "}as ${esc(m.player.name)} — tap to switch</small></button>
+      <button type="button" class="leaguehide" data-hide="${m.league.id}" title="Remove from this phone" aria-label="Remove ${esc(m.league.name)} from this phone">✕</button>
+    </div>`).join("")}
   </div>` : ""}
   <form class="join" id="join">
     <h2>Join a league</h2>
@@ -777,6 +780,24 @@ function renderJoin() {
       else showLeagueError(e);
     }
   };
+  // Tidy your own list without touching the league itself — your picks stay put
+  // and the passcode brings it back.
+  document.querySelectorAll(".leaguehide").forEach(b => b.onclick = () => {
+    const m = state.memberships.find(x => x.league.id === b.dataset.hide);
+    if (!m) return;
+    if (!confirm(`Remove ${m.league.name} from this phone? Your picks stay — rejoin any time with the passcode.`)) return;
+    state.memberships = state.memberships.filter(x => x.league.id !== m.league.id);
+    localStorage.setItem("memberships", JSON.stringify(state.memberships));
+    if (state.league?.id === m.league.id) {
+      const next = state.memberships[0];
+      if (next) return switchLeague(next);
+      localStorage.removeItem("player"); localStorage.removeItem("league");
+      state.player = null; state.league = null; state.players = []; state.picks = [];
+    }
+    $("#banner").textContent = `${m.league.name} removed from this phone.`;
+    render();
+  });
+
   document.querySelectorAll(".leaguebtn").forEach(b => b.onclick = () => {
     const m = state.memberships.find(x => x.league.id === b.dataset.league);
     if (m) switchLeague(m);
