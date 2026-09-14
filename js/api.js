@@ -183,6 +183,22 @@ export function listLines(gameIds) {
   return rest(`lines?game_id=in.(${gameIds.map(encodeURIComponent).join(",")})&select=game_id,fav_id,points`);
 }
 
+// ESPN's own win probability, frozen before kickoff — it's what the game
+// info screen shows, and it disappears from ESPN once a game ends.
+export function listProbs(gameIds) {
+  if (!gameIds.length) return Promise.resolve([]);
+  return rest(`probs?game_id=in.(${gameIds.map(encodeURIComponent).join(",")})&select=game_id,home_prob`);
+}
+
+export function saveProbs(rows) {
+  if (!rows.length) return Promise.resolve(null);
+  return rest("probs", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify(rows.map(r => ({ ...r, updated_at: new Date().toISOString() }))),
+  });
+}
+
 export function saveLines(rows) {
   if (!rows.length) return Promise.resolve(null);
   return rest("lines", {

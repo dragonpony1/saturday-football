@@ -15,6 +15,7 @@ const state = {
   infoOpen: new Set(),              // game ids with the info snapshot expanded
   followGame: localStorage.getItem("followGame") || null, // play-by-play on the ticker
   lines: new Map(),                 // game id -> { fav_id, points } frozen before kickoff
+  probs: new Map(),                 // game id -> home win probability, frozen before kickoff
   invite: new URLSearchParams(location.search).get("join"), // ?join=<passcode> deep link
   pendingInvite: null,              // league an invite link is offering
 };
@@ -430,7 +431,7 @@ function gameRow(g) {
   const status = g.state === "in" ? `<span class="status live">${g.detail}</span>`
                : g.state === "post" ? `<span class="status">${g.detail}</span>` : "";
   el.innerHTML = `<div class="teams">${teamLine(g.away)}${teamLine(g.home)}</div>
-    <div class="meta"><span class="tv">${g.tv}</span>${spreadHtml(g)}${status}${infoBtnHtml()}</div>`;
+    <div class="meta"><span class="tv">${g.tv}</span>${bdBadge(g)}${spreadHtml(g)}${status}${infoBtnHtml()}</div>`;
   bindInfoBtn(el, g);
   return el;
 }
@@ -476,7 +477,7 @@ async function openGameInfo(g) {
     if (s.proj?.home != null && s.proj?.away != null) {
       const fav = s.proj.home >= s.proj.away ? g.home : g.away;
       const pct = Math.round(Math.max(s.proj.home, s.proj.away));
-      extra += `<h4>Who's favored</h4>
+      extra += `${isBD(g) ? `<p><span class="bdbadge">BD ×2</span> <b>Brimhall Double</b> — a coin flip. Everything you earn here doubles.</p>` : ""}<h4>Who's favored</h4>
         <p><b>${esc(fav.name)}</b> — ${pct}% to win, says ESPN's computer${line ? `. Vegas picks <b>${esc(friendlyLine(line))}</b> points.` : ""}</p>
         ${ou ? `<p>${ouLine(ou)}</p>` : ""}
         <div class="projbar"><div style="width:${Math.round(s.proj.away)}%"></div></div>
@@ -616,7 +617,7 @@ function pickRow(g, picked, locked, famPicks, isLock = false, isCougar = false) 
     if (parts.length) fam = `<div class="fampicks">${parts.join("&ensp;")}</div>`;
   }
   el.innerHTML = `<div class="pickpair">${btn(g.away)}${btn(g.home)}</div>
-    <div class="meta"><span class="tv">${g.tv}</span>${spreadHtml(g)}
+    <div class="meta"><span class="tv">${g.tv}</span>${bdBadge(g)}${spreadHtml(g)}
     ${g.state !== "pre" ? `<span class="status ${g.state === "in" ? "live" : ""}">${g.detail}</span>` : `<span class="status">${locked ? "Locked" : ""}</span>`}${infoBtnHtml()}${lockBtnHtml(picked, locked, isLock, isCougar)}</div>${fam}`;
   el.querySelectorAll(".pickbtn").forEach(b => b.onclick = () => makePick(g, b.dataset.team));
   const lb = el.querySelector(".lockbtn");
@@ -961,12 +962,40 @@ function spreadPoints(g) {
   return null;
 }
 
-// Underdog's chance, 0-1. null when there's no line to judge by.
+// Underdog's chance, 0-1 — the same number the game info screen shows.
+// Falls back to the betting line only when ESPN never published one.
 function underdogProb(g) {
+  const hp = state.probs.get(g.id);
+  if (hp != null) return Math.min(+hp, 100 - +hp) / 100;
   const pts = spreadPoints(g);
   if (pts == null) return null;
   const sigma = api.getSport() === "nfl" ? 13.9 : 16; // typical margin swing
   return 1 - normCdf(pts / sigma);
+}
+
+// Fill in ESPN's win probabilities for games that don't have one stored yet.
+// A few per pass, so nobody's phone hammers ESPN with a whole slate at once.
+let probRun = false;
+async function syncProbs(games) {
+  if (probRun || !api.isConfigured() || !games.length) return;
+  probRun = true;
+  try {
+    const ids = games.map(g => g.id);
+    for (const row of await api.listProbs(ids)) state.probs.set(row.game_id, +row.home_prob);
+    const missing = games.filter(g => g.state === "pre" && !state.probs.has(g.id)).slice(0, 8);
+    const fresh = [];
+    for (const g of missing) {
+      try {
+        const s = await api.fetchGameSummary(g.id);
+        const hp = s.proj?.home;
+        if (hp == null || isNaN(hp)) continue;
+        state.probs.set(g.id, hp);
+        fresh.push({ game_id: g.id, home_prob: hp });
+      } catch {}
+    }
+    if (fresh.length) { await api.saveProbs(fresh); render(); }
+  } catch (e) { console.error(e); }
+  finally { probRun = false; }
 }
 
 // The gold flag riders see on a coin-flip game.
@@ -1009,6 +1038,7 @@ async function syncLines(games) {
       fresh.push(row); state.lines.set(g.id, row);
     }
     if (fresh.length) await api.saveLines(fresh);
+    syncProbs(games);
   } catch (e) { console.error(e); }
 }
 
