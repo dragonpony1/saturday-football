@@ -288,7 +288,9 @@ function bindNav() {
       : `Open your browser's menu (the <b>⋮</b> in the corner) and tap <b>Add to home screen</b> or <b>Install app</b>.`;
   };
   document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
-  $("#who").onclick = () => { state.showJoin = true; setView("picks"); };
+  const openLeagues = () => { state.showJoin = true; setView("picks"); };
+  $("#who").onclick = openLeagues;
+  $("#myleagues").onclick = openLeagues;
   $("#scoreticker").onclick = () => { setView("schedule"); if (state.week !== state.nowWeek) loadWeek(state.nowWeek); };
   $("#ticker").onclick = () => {
     if (state.tickerTip) {
@@ -411,6 +413,7 @@ function render() {
   else renderStandings();
   $("#signout").hidden = !state.player;
   $("#who").hidden = !state.player;
+  $("#myleagues").hidden = !state.player;
   $("#who").textContent = state.player ? `${state.player.name} · ${state.league?.icon || "🏈"} ${state.league?.name || ""} ▾` : "";
 }
 
