@@ -54,6 +54,7 @@ function parseGames(json) {
     const o = (c.odds || [])[0];
     return {
       line: o?.details || null,                 // e.g. "BC -3.5"
+      spreadNum: typeof o?.spread === "number" ? o.spread : null,
       ou: o?.overUnder ?? null,
       venue: c.venue?.fullName || null,         // includes the city
       weather: ev.weather ? `${ev.weather.displayValue}, ${ev.weather.temperature}°` : null,

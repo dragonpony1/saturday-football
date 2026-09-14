@@ -426,7 +426,7 @@ function renderSchedule() {
 
 function gameRow(g) {
   const el = document.createElement("article");
-  el.className = `game ${g.state}`;
+  el.className = `game ${g.state}${isBD(g) ? " bd" : ""}`;
   const status = g.state === "in" ? `<span class="status live">${g.detail}</span>`
                : g.state === "post" ? `<span class="status">${g.detail}</span>` : "";
   el.innerHTML = `<div class="teams">${teamLine(g.away)}${teamLine(g.home)}</div>
@@ -597,7 +597,7 @@ function renderPicks(entry) {
 
 function pickRow(g, picked, locked, famPicks, isLock = false, isCougar = false) {
   const el = document.createElement("article");
-  el.className = `game pick ${g.state}`;
+  el.className = `game pick ${g.state}${isBD(g) ? " bd" : ""}`;
   const btn = t => {
     const isPick = picked === t.id;
     const res = g.state === "post" && isPick ? pickResult(g, t.id) : null;
@@ -939,15 +939,56 @@ const myCougarsThisWeek = () => state.picks.filter(p =>
   p.player_id === state.player?.id && p.week === state.week && p.is_cougar).length;
 
 // What one decided pick is worth.
-function pickPoints(p, res) {
-  if (p.is_cougar) return res === "win" ? COUGAR_WIN : COUGAR_LOSS;
-  if (res !== "win") return 0;
-  return p.is_lock ? LOCK_POINTS : 1;
+// ---------- BD: the Brimhall Double ----------
+// A true coin flip — neither side better than about 56% to win — pays double.
+// Judged from the betting line (frozen before kickoff), because ESPN's own
+// win-probability disappears once a game is over.
+const BD_MIN_PROB = 0.44;
+
+// Normal CDF, good to ~1e-7 — turns a point spread into a win probability.
+function normCdf(z) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989423 * Math.exp(-z * z / 2);
+  const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  return z > 0 ? 1 - p : p;
+}
+
+// The spread we'll judge by: the frozen one if we have it, else what's live.
+function spreadPoints(g) {
+  const ln = state.lines.get(g.id);
+  if (ln && ln.points != null) return Math.abs(+ln.points);
+  if (g.spreadNum != null) return Math.abs(g.spreadNum);
+  return null;
+}
+
+// Underdog's chance, 0-1. null when there's no line to judge by.
+function underdogProb(g) {
+  const pts = spreadPoints(g);
+  if (pts == null) return null;
+  const sigma = api.getSport() === "nfl" ? 13.9 : 16; // typical margin swing
+  return 1 - normCdf(pts / sigma);
+}
+
+// The gold flag riders see on a coin-flip game.
+function bdBadge(g) {
+  if (!isBD(g)) return "";
+  const p = underdogProb(g);
+  return `<span class="bdbadge" title="Brimhall Double — a true coin flip. Points double.">BD ×2 · ${Math.round(p * 100)}/${100 - Math.round(p * 100)}</span>`;
+}
+
+const isBD = g => { const p = underdogProb(g); return p != null && p >= BD_MIN_PROB; };
+
+function pickPoints(p, res, game) {
+  const base = p.is_cougar ? (res === "win" ? COUGAR_WIN : COUGAR_LOSS)
+    : res !== "win" ? 0
+    : p.is_lock ? LOCK_POINTS : 1;
+  // The Double only ever doubles winnings, never the sting of a miss.
+  return (base > 0 && game && isBD(game)) ? base * 2 : base;
 }
 
 // Pull the frozen lines for these games, and freeze any that aren't stored yet.
 async function syncLines(games) {
-  if (!spreadLeague() || !api.isConfigured() || !games.length) return;
+  if (!api.isConfigured() || !games.length) return;
   try {
     const ids = games.map(g => g.id);
     for (const row of await api.listLines(ids)) state.lines.set(row.game_id, row);
@@ -1039,6 +1080,7 @@ function renderRules() {
       <li><b>The League tab</b> holds the standings and the league chat. Standings add up the whole season; games still being played don't count until they're final.</li>
       <li><b>The black scoreboard strip up top</b> colours your games: <b style="color:#2C7A3F">green ▲</b> when the team you picked is ahead, <b style="color:#C8352E">red ▼</b> when they're behind, and yellow when an unranked team is upsetting a ranked one.</li>
       <li><b>⭐ Locks.</b> If your league uses them, you get a few every week: tap "Make this a lock" on a game you've already picked. A lock that hits is worth <b>${LOCK_POINTS} points</b> instead of 1 — a lock that misses is worth nothing. Pick your spots. You can move them around until the game kicks off.</li>
+      <li><b>🥇 The Brimhall Double (BD).</b> Games Vegas can't separate — a true coin flip, both teams roughly 44–50% — wear a <b>shimmering gold outline</b>. Everything you earn on a BD game <b>doubles</b>: a normal pick pays 2, a ⭐ lock pays ${LOCK_POINTS * 2}, and a 🐾 Cougar Tail pays ${COUGAR_WIN * 2}. A miss costs the same as always — the Double only doubles winnings. Pick the toss-ups right and you can swing a week in an afternoon.</li>
       <li><b>🐾 The Cougar Tail.</b> One a week, on any game you've picked. Hit it and you bank <b>${COUGAR_WIN} points</b> — miss and it <b>costs you ${Math.abs(COUGAR_LOSS)}</b>. A game can be a lock or a Cougar Tail, never both. Choose violence accordingly.</li>
       <li><b>Tied?</b> The 🎲 tie-breaker button on the League tab posts a public roll (1–100) into the chat. <b>One roll per week, locked in</b> — highest roll wins, no take-backs.</li>
       <li><b>New folks join</b> with the league passcode and their name — same name every time, so picks stay together.</li>
@@ -1068,7 +1110,7 @@ function standingsHtml() {
       decided++;
       byWeek[p.week] = byWeek[p.week] || { right: 0, played: 0, pts: 0 };
       byWeek[p.week].played++;
-      const worth = pickPoints(p, res);
+      const worth = pickPoints(p, res, byId.get(p.game_id));
       total += worth; byWeek[p.week].pts += worth;
       // Hit rate counts picks, not points — locks and Cougar Tails are worth
       // more than one, which used to push it past 100%.
@@ -1120,9 +1162,10 @@ function recapHtml(pid) {
       const mark = res === "win" ? `<span class="rgt">✓</span>` : res === "push" ? `<span class="psh">➖</span>` : `<span class="wrg">✗</span>`;
       const ln = spreadLeague() ? state.lines.get(g.id) : null;
       const vs = ln ? ` <span class="vsline">(line: ${esc(ln.fav_id === mine.id ? mine.name : other.name)} by ${Math.abs(+ln.points)})</span>` : "";
+      const dbl = isBD(g) ? `<b class="bdon">BD ×2</b> ` : "";
       const star = lockIds.has(g.id) ? `<b class="lockon">⭐${res === "win" ? ` +${LOCK_POINTS}` : ""}</b> `
         : cougarIds.has(g.id) ? `<b class="cougaron">🐾 ${res === "win" ? `+${COUGAR_WIN}` : COUGAR_LOSS}</b> ` : "";
-      lines.push(`${mark} ${star}${esc(mine.name)} ${mine.winner ? "beat" : "lost to"} ${esc(other.name)} ${mine.score}–${other.score}${vs}`);
+      lines.push(`${mark} ${dbl}${star}${esc(mine.name)} ${mine.winner ? "beat" : "lost to"} ${esc(other.name)} ${mine.score}–${other.score}${vs}`);
     } else pending++;
   }
   return `${lines.length ? lines.join("<br>") : "No finished picks yet this week."}

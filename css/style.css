@@ -46,6 +46,25 @@ main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
 
 .game { background: var(--card); border-left: 4px solid var(--rule); padding: 10px 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; margin-bottom: 6px; border-radius: 0 6px 6px 0; }
 .game.in { border-left-color: var(--live); }
+
+/* BD — the Brimhall Double. A coin-flip game, wearing shimmering gold. */
+.game.bd {
+  border-left-color: #c9a227;
+  box-shadow: 0 0 0 2px #c9a227, 0 0 14px rgba(201, 162, 39, .35);
+  background-image: linear-gradient(110deg, rgba(212,175,55,0) 38%, rgba(212,175,55,.30) 50%, rgba(212,175,55,0) 62%);
+  background-size: 250% 100%;
+  background-repeat: no-repeat;
+}
+.bdbadge {
+  background: linear-gradient(100deg, #b8912a, #f5d97a 45%, #b8912a 70%);
+  color: #2b2200; font: 700 11px "Source Sans 3", sans-serif; letter-spacing: .3px;
+  border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+}
+.bdon { color: #a9841f; font-size: 12px; font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) {
+  .game.bd { animation: bdshimmer 4s linear infinite; }
+  @keyframes bdshimmer { from { background-position: 150% 0; } to { background-position: -150% 0; } }
+}
 .teams { display: flex; flex-direction: column; gap: 2px; }
 .team { display: flex; align-items: center; gap: 8px; font-size: 17px; }
 .rank { font: 500 13px Oswald, sans-serif; color: var(--mute); min-width: 20px; text-align: right; }
