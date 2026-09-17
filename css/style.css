@@ -25,6 +25,16 @@ h1 { font: 600 28px/1.05 Oswald, sans-serif; letter-spacing: .5px; margin: 0; fl
 .who .sharebtn, .who .pillbtn { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; border: 1px solid rgba(244,244,241,.45); border-radius: 999px; padding: 4px 11px; margin-left: 8px; font: 500 13px Oswald, sans-serif; letter-spacing: .3px; }
 .who .sharebtn:hover, .who .pillbtn:hover { background: rgba(244,244,241,.12); }
 
+/* Phone: line the name and buttons up with the title's left edge. Right-aligned
+   rows stacked under a left-aligned title leave a void in the middle and read
+   as a floating, lopsided header. */
+@media (max-width: 460px) {
+  .who { justify-content: flex-start; gap: 9px; }
+  #who { text-align: left; }
+  .who button { padding-left: 0; }
+  .who .sharebtn, .who .pillbtn { margin-left: 0; padding: 4px 11px; }
+}
+
 .tabs { display: flex; gap: 4px; margin-top: 14px; overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs button { background: none; border: 0; color: var(--chalk); font: 500 17px Oswald, sans-serif; letter-spacing: .4px; padding: 8px 12px 10px; cursor: pointer; opacity: .7; border-bottom: 3px solid transparent; white-space: nowrap; flex: 0 0 auto; }
