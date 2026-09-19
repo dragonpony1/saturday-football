@@ -480,7 +480,7 @@ async function openGameInfo(g) {
     if (s.proj?.home != null && s.proj?.away != null) {
       const fav = s.proj.home >= s.proj.away ? g.home : g.away;
       const pct = Math.round(Math.max(s.proj.home, s.proj.away));
-      extra += `${isBD(g) ? `<p><span class="bdbadge">BD ×2</span> <b>Brimhall Double</b> — a coin flip. Everything you earn here doubles.</p>` : ""}<h4>Who's favored</h4>
+      extra += `${isBD(g) ? `<p><span class="bdbadge">BD ×2</span> <b>Brimhall Double</b> — a coin flip, so everything you win here doubles: a correct pick pays 2, a ⭐ lock pays ${LOCK_POINTS * 2}, a 🐾 Cougar Tail pays ${COUGAR_WIN * 2}. A miss costs the same as always.</p>` : ""}<h4>Who's favored</h4>
         <p><b>${esc(fav.name)}</b> — ${pct}% to win, says ESPN's computer${line ? `. Vegas picks <b>${esc(friendlyLine(line))}</b> points.` : ""}</p>
         ${ou ? `<p>${ouLine(ou)}</p>` : ""}
         <div class="projbar"><div style="width:${Math.round(s.proj.away)}%"></div></div>
@@ -1040,7 +1040,7 @@ async function syncProbs(games) {
 function bdBadge(g) {
   if (!isBD(g)) return "";
   const p = underdogProb(g);
-  return `<span class="bdbadge" title="Brimhall Double — a true coin flip. Points double.">BD ×2 · ${Math.round(p * 100)}/${100 - Math.round(p * 100)}</span>`;
+  return `<span class="bdbadge" title="Brimhall Double — a coin flip. Everything you win here doubles: pick 2, ⭐ lock ${LOCK_POINTS * 2}, 🐾 Cougar Tail ${COUGAR_WIN * 2}.">BD ×2 · ${Math.round(p * 100)}/${100 - Math.round(p * 100)}</span>`;
 }
 
 const isBD = g => { const p = underdogProb(g); return p != null && p >= BD_MIN_PROB; };
