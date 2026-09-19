@@ -51,6 +51,16 @@ h1 { font: 600 28px/1.05 Oswald, sans-serif; letter-spacing: .5px; margin: 0; fl
 .weeks button[aria-pressed=true] { background: var(--line); border-color: var(--line); color: #fff; }
 
 main { max-width: 860px; margin: 0 auto; padding: 14px 16px 60px; }
+
+/* Home-screen app on a notched phone. The page now runs edge to edge
+   (viewport-fit=cover), so inset the CONTENT past the notch and the home
+   indicator while the backgrounds stay full bleed. Without this iOS
+   letterboxed the app and painted the strip above the header in the page's
+   off-white -- a blue header floating below a pale band, margins all off. */
+header { padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
+header, main { padding-left: calc(16px + env(safe-area-inset-left, 0px));
+               padding-right: calc(16px + env(safe-area-inset-right, 0px)); }
+main { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
 .topline { display: flex; justify-content: space-between; color: var(--mute); font-size: 14px; }
 .banner:empty { display: none; }
 .banner { background: #fbe9d7; border-left: 4px solid #d3842f; padding: 8px 12px; margin: 10px 0; border-radius: 0 6px 6px 0; }
