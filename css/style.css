@@ -5,6 +5,10 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--chalk); color: var(--ink); font: 16px/1.4 "Source Sans 3", system-ui, sans-serif; }
 button { font-family: inherit; }
+/* An author display rule beats the hidden attribute. Say it once, loudly --
+   this gotcha already cost four point fixes further down (.modal, .join,
+   .join label, .ticker) and then caught the My leagues pill anyway. */
+[hidden] { display: none !important; }
 :focus-visible { outline: 3px solid var(--line); outline-offset: 2px; }
 
 header { background: var(--field); color: var(--chalk); padding: 18px 16px 0; position: sticky; top: 0; z-index: 5; box-shadow: 0 2px 0 var(--line); }
