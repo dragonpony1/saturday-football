@@ -147,13 +147,19 @@ async function updateRollBtn() {
 // Write text into a ticker strip: two copies for a seamless loop, and never
 // redraw identical content (a redraw restarts the scroll and looks like the
 // score vanished mid-crawl).
+// Crawl speed in pixels per second. The black scores ticker runs close to
+// double the blue chat ribbon -- a score is a glance, a chat line is a
+// sentence you have to read. The 880 floor keeps a short message from
+// whipping past; at 55 px/s that is the old 16s minimum, unchanged.
+const CHAT_CRAWL = 55, SCORE_CRAWL = 100;
 function setTicker(el, html) {
   if (!el || el.dataset.key === html) return;
   el.dataset.key = html;
   el.innerHTML = `<span class="run">${html}</span><span class="run" aria-hidden="true">${html}</span>`;
   requestAnimationFrame(() => {
     const w = el.scrollWidth / 2;
-    el.style.animationDuration = Math.max(16, Math.round(w / 55)) + "s";
+    const speed = el.id === "scoretext" ? SCORE_CRAWL : CHAT_CRAWL;
+    el.style.animationDuration = Math.round(Math.max(880, w) / speed) + "s";
   });
 }
 
