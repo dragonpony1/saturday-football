@@ -153,6 +153,10 @@ footer{color:var(--muted);font-size:13px;text-align:center;padding:24px 0 40px}
 .rate-row input{width:84px;border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--ground)}
 .swap{border:0;background:var(--cobalt-soft);color:var(--cobalt);border-radius:999px;padding:6px 12px;font-weight:600;cursor:pointer}
 
+.share-btn{display:block;width:100%;margin-top:12px;border:2px solid #ffffff66;background:transparent;color:#fff;
+  border-radius:14px;padding:12px 16px;font-weight:600;font-size:16px;cursor:pointer}
+.share-btn:active{background:#ffffff1f}
+
 /* Name dialog */
 dialog{border:0;border-radius:16px;padding:24px;max-width:340px;width:calc(100% - 32px);background:var(--paper);color:var(--ink)}
 dialog::backdrop{background:#0B163Ccc}
@@ -185,6 +189,7 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
       <span><span class="big">Pesos to dollars</span><br><span class="small" id="calcRateLine">Tap to convert a price</span></span>
       <span class="sign" aria-hidden="true">$</span>
     </button>
+    <button class="share-btn" id="shareBtn" type="button">Share with the crew</button>
   </div>
 </header>
 
@@ -511,6 +516,15 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
   fetch("https://open.er-api.com/v6/latest/USD").then(r => r.json()).then(d => {
     const r = d?.rates?.MXN; if (r && rateSrc !== "manual"){ rate = r; rateSrc = "live"; store.set("crew-rate", r); store.set("crew-rate-src","live"); paintRate(); }
   }).catch(() => {});
+
+  // ---------- share ----------
+  $("#shareBtn").onclick = async () => {
+    const url = location.href.split("#")[0];
+    const data = { title:"Xcaret Crew", text:"Our plan for the week. Add your ideas!", url };
+    if (navigator.share){ try{ await navigator.share(data) }catch{} return; }
+    try{ await navigator.clipboard.writeText(url); toast("Link copied. Paste it in the group chat."); }
+    catch{ prompt("Copy this link:", url); }
+  };
 
   load();
 })();
