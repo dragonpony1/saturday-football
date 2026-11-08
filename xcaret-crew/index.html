@@ -44,6 +44,18 @@ button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--marigold);outline-offset:2px;border-radius:6px}
 .wrap{max-width:720px;margin:0 auto;padding:0 16px}
 
+/* ---------- Spanish word of the minute ---------- */
+.palabra{display:flex;align-items:center;gap:10px;height:42px;padding-left:12px;overflow:hidden;
+  background:var(--marigold);color:#2B1E00}
+.palabra .lbl{flex:none;background:#2B1E00;color:#FFC633;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600}
+.palabra .track{flex:1;position:relative;height:100%;overflow:hidden}
+.palabra .word{position:absolute;top:50%;left:100%;transform:translate(0,-50%);white-space:nowrap;font-size:16px;
+  animation:palabra 12s linear infinite}
+.palabra .es{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:19px}
+.palabra .say{font-style:normal;font-size:13px;opacity:.75;margin:0 4px}
+@keyframes palabra{from{left:100%;transform:translate(0,-50%)}to{left:0;transform:translate(-100%,-50%)}}
+@media (prefers-reduced-motion:reduce){.palabra .word{animation:none;left:0}}
+
 /* ---------- Papel picado ---------- */
 .picado{position:relative;height:96px;overflow:hidden;background:var(--cobalt)}
 .picado .string{position:absolute;left:-10px;right:-10px;top:10px;height:2px;background:#fff6;}
@@ -212,6 +224,11 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
 </style>
 </head>
 <body>
+
+<div class="palabra" role="marquee" aria-label="Spanish word of the minute">
+  <span class="lbl">Spanish</span>
+  <div class="track"><span class="word" id="palabra"></span></div>
+</div>
 
 <div class="picado" aria-hidden="true">
   <div class="string"></div>
@@ -595,7 +612,7 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
 
   // ---------- new version alert ----------
   // Bump VERSION here AND in version.json on every push.
-  const VERSION = "1.5";
+  const VERSION = "1.6";
   $("#ver").textContent = `Version ${VERSION}`;
   async function checkVersion(){
     try{
@@ -648,6 +665,76 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
   };
 
   load();
+})();
+</script>
+<script>
+// ---------- Spanish word of the minute ----------
+// Everyone sees the same word at the same minute. It swaps in at the end of a pass.
+(() => {
+  const WORDS = [
+    ["hola","OH-lah","hello"], ["gracias","GRAH-see-ahs","thank you"], ["por favor","por fah-VOR","please"],
+    ["de nada","day NAH-dah","you're welcome"], ["buenos días","BWAY-nohs DEE-ahs","good morning"],
+    ["buenas tardes","BWAY-nahs TAR-days","good afternoon"], ["buenas noches","BWAY-nahs NO-chays","good night"],
+    ["adiós","ah-dee-OHS","goodbye"], ["hasta luego","AHS-tah loo-AY-go","see you later"], ["sí","see","yes"],
+    ["perdón","pair-DOHN","excuse me / sorry"], ["con permiso","kohn pair-MEE-so","pardon me (to get by)"],
+    ["¿cuánto cuesta?","KWAN-toh KWES-tah","how much is it?"], ["la cuenta","lah KWEN-tah","the check"],
+    ["¿dónde está el baño?","DOHN-day es-TAH el BAHN-yo","where is the bathroom?"],
+    ["agua","AH-gwah","water"], ["hielo","YAY-lo","ice"], ["cerveza","sair-VAY-sah","beer"],
+    ["vino","VEE-no","wine"], ["café","kah-FAY","coffee"], ["jugo","HOO-go","juice"],
+    ["salud","sah-LOOD","cheers!"], ["delicioso","day-lee-see-OH-so","delicious"], ["la comida","lah ko-MEE-dah","the food"],
+    ["el desayuno","el day-sah-YOO-no","breakfast"], ["el almuerzo","el ahl-MWAIR-so","lunch"], ["la cena","lah SAY-nah","dinner"],
+    ["picante","pee-KAHN-tay","spicy"], ["sin picante","seen pee-KAHN-tay","not spicy"], ["la mesa","lah MAY-sah","the table"],
+    ["mesero","may-SAIR-oh","waiter"], ["tacos al pastor","TAH-kohs ahl pahs-TOR","spit-roasted pork tacos"],
+    ["guacamole","gwah-kah-MOH-lay","guacamole"], ["limón","lee-MOHN","lime"], ["sal","sahl","salt"],
+    ["el pescado","el pes-KAH-doh","fish"], ["los camarones","lohs kah-mah-ROH-nays","shrimp"], ["el pollo","el POY-yo","chicken"],
+    ["la playa","lah PLY-yah","the beach"], ["el mar","el mar","the sea"], ["la arena","lah ah-RAY-nah","sand"],
+    ["el sol","el sohl","the sun"], ["la piscina","lah pee-SEE-nah","the pool"], ["la toalla","lah toh-AH-yah","towel"],
+    ["el bloqueador","el blo-kay-ah-DOR","sunscreen"], ["nadar","nah-DAR","to swim"], ["el río","el REE-oh","the river"],
+    ["el cenote","el say-NOH-tay","sinkhole swimming hole"], ["la cueva","lah KWAY-vah","the cave"], ["la selva","lah SEL-vah","the jungle"],
+    ["la tortuga","lah tor-TOO-gah","turtle"], ["el delfín","el del-FEEN","dolphin"], ["el pez","el pes","fish (alive)"],
+    ["el tiburón","el tee-boo-ROHN","shark"], ["el mono","el MOH-no","monkey"], ["el jaguar","el hah-GWAR","jaguar"],
+    ["la mariposa","lah mah-ree-POH-sah","butterfly"], ["el flamenco","el flah-MEN-ko","flamingo"], ["el loro","el LOH-ro","parrot"],
+    ["la pirámide","lah pee-RAH-mee-day","pyramid"], ["las ruinas","lahs roo-EE-nahs","ruins"], ["maya","MY-yah","Mayan"],
+    ["el espectáculo","el es-pek-TAH-koo-lo","the show"], ["la entrada","lah en-TRAH-dah","entrance / ticket"],
+    ["la salida","lah sah-LEE-dah","exit"], ["el boleto","el bo-LAY-toh","ticket"], ["abierto","ah-bee-AIR-toh","open"],
+    ["cerrado","say-RAH-doh","closed"], ["¿a qué hora?","ah kay OR-ah","at what time?"], ["ahora","ah-OR-ah","now"],
+    ["ahorita","ah-or-EE-tah","in a bit (or never)"], ["mañana","mahn-YAH-nah","tomorrow"], ["hoy","oy","today"],
+    ["la noche","lah NO-chay","night"], ["temprano","tem-PRAH-no","early"], ["tarde","TAR-day","late"],
+    ["vámonos","VAH-mo-nohs","let's go"], ["¡cuidado!","kwee-DAH-doh","careful!"], ["despacio","des-PAH-see-oh","slowly"],
+    ["rápido","RAH-pee-doh","fast"], ["a la derecha","ah lah day-RAY-chah","to the right"], ["a la izquierda","ah lah ees-kee-AIR-dah","to the left"],
+    ["derecho","day-RAY-cho","straight ahead"], ["aquí","ah-KEE","here"], ["allá","ah-YAH","over there"],
+    ["el taxi","el TAHK-see","taxi"], ["el aeropuerto","el ah-air-oh-PWAIR-toh","airport"], ["el hotel","el oh-TEL","hotel"],
+    ["la habitación","lah ah-bee-tah-see-OHN","the room"], ["la llave","lah YAH-vay","the key"], ["la propina","lah pro-PEE-nah","the tip"],
+    ["el dinero","el dee-NAIR-oh","money"], ["la tarjeta","lah tar-HAY-tah","card"], ["efectivo","ay-fek-TEE-vo","cash"],
+    ["barato","bah-RAH-toh","cheap"], ["caro","KAH-ro","expensive"], ["hace calor","AH-say kah-LOR","it's hot"],
+    ["la lluvia","lah YOO-vee-ah","rain"], ["tengo hambre","TEN-go AHM-bray","I'm hungry"], ["tengo sed","TEN-go sed","I'm thirsty"],
+    ["estoy cansado","es-TOY kahn-SAH-doh","I'm tired"], ["me gusta","may GOOS-tah","I like it"], ["no entiendo","no en-tee-EN-doh","I don't understand"],
+    ["más despacio, por favor","mahs des-PAH-see-oh por fah-VOR","slower, please"], ["¿habla inglés?","AH-blah een-GLAYS","do you speak English?"],
+    ["la familia","lah fah-MEE-lee-ah","family"], ["los amigos","lohs ah-MEE-gohs","friends"], ["¡qué bonito!","kay bo-NEE-toh","how pretty!"],
+    ["increíble","een-kray-EE-blay","incredible"], ["la foto","lah FOH-toh","photo"], ["¡vamos a la playa!","VAH-mohs ah lah PLY-yah","let's go to the beach!"]
+  ];
+  const el = document.getElementById("palabra");
+  if (!el) return;
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let shown = -1;
+  function setWord(){
+    const i = Math.floor(Date.now() / 60000) % WORDS.length;
+    if (i === shown) return;
+    shown = i;
+    const [es, say, en] = WORDS[i];
+    el.innerHTML = "";
+    const b = document.createElement("span"); b.className = "es"; b.textContent = es;
+    const s = document.createElement("i"); s.className = "say"; s.textContent = `(${say})`;
+    el.append(b, s, document.createTextNode(` = ${en}`));
+    if (!still){
+      // Keep the same easy reading speed whatever the word length or screen width.
+      const dist = el.parentElement.clientWidth + el.offsetWidth;
+      el.style.animationDuration = `${Math.max(8, dist / 60)}s`;
+    }
+  }
+  setWord();
+  if (still) setInterval(setWord, 5000);
+  else el.addEventListener("animationiteration", setWord);
 })();
 </script>
 </body>
