@@ -173,6 +173,32 @@ footer{color:var(--muted);font-size:13px;text-align:center;padding:24px 0 40px}
 .newver.show{display:flex}
 .newver .r{margin-left:auto;background:#fff;color:var(--rosa);border-radius:999px;padding:6px 14px;white-space:nowrap}
 
+.hdr-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.hdr-row .share-btn{margin-top:0}
+.week-btn{background:#fff;color:var(--cobalt);border-color:#fff}
+.week-btn:active{background:#E7ECF8}
+#weekDlg{max-width:560px;width:calc(100% - 24px);max-height:calc(100dvh - 32px);padding:0;overflow:hidden}
+#weekDlg[open]{display:flex;flex-direction:column}
+.wk-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;border-bottom:1px solid var(--line)}
+.wk-head h2{margin:0}
+.wk-body{overflow-y:auto;padding:8px 20px 24px}
+.wk-day{padding:14px 0;border-bottom:1px solid var(--line)}
+.wk-day:last-child{border-bottom:0}
+.wk-day h3{display:flex;align-items:baseline;gap:10px;margin:0 0 8px;font-size:15px;color:var(--muted);font-weight:600}
+.wk-day h3 b{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:26px;color:var(--cobalt);line-height:1}
+.wk-day.is-today h3 b{color:var(--rosa)}
+.wk-day.is-today h3::after{content:"Today";font-size:12px;background:var(--marigold);color:#2B1E00;border-radius:999px;padding:2px 8px}
+.wk-entry{display:grid;grid-template-columns:76px 1fr auto;gap:10px;align-items:baseline;width:100%;text-align:left;
+  border:0;background:var(--ground);border-radius:10px;padding:10px 12px;margin:0 0 6px;cursor:pointer}
+.wk-entry:hover{background:var(--cobalt-soft)}
+.wk-entry .when{font-size:13px;font-weight:600;color:var(--jungle)}
+.wk-entry .when .tm{display:block;color:var(--rosa)}
+.wk-entry .txt{font-weight:600;overflow-wrap:anywhere}
+.wk-entry .ppl{font-size:12px;color:var(--muted);white-space:nowrap}
+.wk-free{width:100%;text-align:left;border:1.5px dashed var(--line);background:none;border-radius:10px;padding:9px 12px;color:var(--muted);cursor:pointer;font-size:14px}
+.item.flash{animation:flash 1.6s ease}
+@keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--marigold)}100%{box-shadow:0 0 0 1px var(--line)}}
+
 /* Name dialog */
 dialog{border:0;border-radius:16px;padding:24px;max-width:340px;width:calc(100% - 32px);background:var(--paper);color:var(--ink)}
 dialog::backdrop{background:#0B163Ccc}
@@ -205,7 +231,10 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
       <span><span class="big">Pesos to dollars</span><br><span class="small" id="calcRateLine">Tap to convert a price</span></span>
       <span class="sign" aria-hidden="true">$</span>
     </button>
-    <button class="share-btn" id="shareBtn" type="button">Share with the crew</button>
+    <div class="hdr-row">
+      <button class="share-btn week-btn" id="weekBtn" type="button">Week calendar</button>
+      <button class="share-btn" id="shareBtn" type="button">Share with the crew</button>
+    </div>
   </div>
 </header>
 
@@ -272,6 +301,10 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
   </div>
 </dialog>
 <button class="activity" id="activity" type="button" aria-live="polite"><span class="who" id="actWho"></span><span class="msg" id="actMsg"></span><span class="go" id="actGo"></span></button>
+<dialog id="weekDlg" aria-labelledby="wkTitle">
+  <div class="wk-head"><h2 id="wkTitle">The whole week</h2><button class="btn ghost" id="weekClose" type="button">Close</button></div>
+  <div class="wk-body" id="weekBody"></div>
+</dialog>
 <button class="newver" id="newVer" type="button"><span>A new version of the planner is ready</span><span class="r">Refresh</span></button>
 <div class="toast" id="toast" role="status"></div>
 
@@ -403,7 +436,7 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
 
   function planItem(it){
     const on = (it.votes||[]).includes(me);
-    return `<div class="item"><div class="row">
+    return `<div class="item" data-item="${it.id}"><div class="row">
       <div class="what"><div class="body">${it.time?`<span class="time">${esc(it.time)}</span>`:""}${esc(it.body)}</div>
       <div class="meta">${it.who?`Added by ${esc(it.who)}`:""}${it.votes?.length?`. ${esc(joinedText(it.votes))}`:""}</div></div>
       <button class="join ${on?"on":""}" data-act="vote" data-id="${it.id}" type="button">${on?"I'm in ✓":"I'm in"}</button>
@@ -472,7 +505,7 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
     });
   }
 
-  function render(){ renderDays(); renderDay(); renderIdeas(); renderNotes(); renderInfo(); }
+  function render(){ renderDays(); renderDay(); renderIdeas(); renderNotes(); renderInfo(); if (document.getElementById("weekDlg")?.open) renderWeek(); }
 
   // ---------- events ----------
   $("#days").addEventListener("click", e => { const b = e.target.closest(".tile"); if (!b) return; selected = b.dataset.day; render();
@@ -562,7 +595,7 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
 
   // ---------- new version alert ----------
   // Bump VERSION here AND in version.json on every push.
-  const VERSION = "1.4";
+  const VERSION = "1.5";
   $("#ver").textContent = `Version ${VERSION}`;
   async function checkVersion(){
     try{
@@ -575,6 +608,35 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
   setInterval(checkVersion, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkVersion(); });
   setTimeout(checkVersion, 3000);
+
+  // ---------- whole week ----------
+  const weekDlg = $("#weekDlg");
+  function renderWeek(){
+    $("#weekBody").innerHTML = DAYS.map((d,i) => {
+      const plans = items.filter(x => x.kind==="plan" && x.day===d.date);
+      const order = s => { const k = d.slots.indexOf(s); return k < 0 ? 99 : k; };
+      plans.sort((a,b) => order(a.slot)-order(b.slot) || timeKey(a.time)-timeKey(b.time));
+      return `<div class="wk-day ${i===todayIdx?"is-today":""}"><h3><b>${d.dow} ${d.num}</b>${esc(d.tag==="Arrive"?"Arrival day":d.tag==="Home"?"Heading home":"")}</h3>
+        ${plans.length ? plans.map(p => `<button class="wk-entry" type="button" data-goto="${p.id}" data-day="${d.date}">
+            <span class="when">${esc(p.slot||"")}${p.time?`<span class="tm">${esc(p.time)}</span>`:""}</span>
+            <span class="txt">${esc(p.body)}</span>
+            <span class="ppl">${p.votes?.length ? p.votes.length + " in" : ""}</span></button>`).join("")
+          : `<button class="wk-free" type="button" data-day="${d.date}">Nothing yet. Tap to add something</button>`}
+      </div>`;
+    }).join("");
+  }
+  $("#weekBtn").onclick = () => { renderWeek(); weekDlg.showModal(); $("#weekBody").scrollTop = 0; };
+  $("#weekClose").onclick = () => weekDlg.close();
+  weekDlg.addEventListener("click", e => { if (e.target === weekDlg) weekDlg.close(); });
+  $("#weekBody").addEventListener("click", e => {
+    const b = e.target.closest("[data-day]"); if (!b) return;
+    weekDlg.close(); selected = b.dataset.day; render();
+    const target = b.dataset.goto ? document.querySelector(`[data-item="${b.dataset.goto}"]`) : $("#daySection");
+    if (!target) return;
+    target.scrollIntoView({ block: b.dataset.goto ? "center" : "start" });
+    if (b.dataset.goto){ target.classList.remove("flash"); void target.offsetWidth; target.classList.add("flash"); }
+    else { const inp = $("#slots input[name=body]"); if (inp) inp.focus({preventScroll:true}); }
+  });
 
   // ---------- share ----------
   $("#shareBtn").onclick = async () => {
