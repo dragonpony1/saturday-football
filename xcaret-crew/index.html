@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{
   --cobalt:#1B3A8F;      /* talavera blue: text + structure */
@@ -211,6 +212,29 @@ footer{color:var(--muted);font-size:13px;text-align:center;padding:24px 0 40px}
 .item.flash{animation:flash 1.6s ease}
 @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--marigold)}100%{box-shadow:0 0 0 1px var(--line)}}
 
+/* Where's everyone map */
+.map-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;background:var(--cenote);border-color:var(--cenote)}
+.map-btn .n{background:#fff;color:#0B5F5C;border-radius:999px;padding:1px 9px;font-size:13px}
+#mapDlg{max-width:640px;width:calc(100% - 16px);height:calc(100dvh - 24px);max-height:none;padding:0;overflow:hidden}
+#mapDlg[open]{display:flex;flex-direction:column}
+#crewMap{flex:1;min-height:200px;background:var(--cobalt-soft)}
+.map-foot{padding:12px 16px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);max-height:42%;overflow-y:auto}
+.share-me{width:100%;border:0;border-radius:12px;padding:13px 16px;font-weight:600;font-size:16px;cursor:pointer;background:var(--rosa);color:#fff}
+.share-me.on{background:var(--cobalt-soft);color:var(--cobalt)}
+.map-note{font-size:13px;color:var(--muted);margin:8px 0 4px}
+.people{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.person{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:var(--ground);border-radius:10px;padding:8px 12px;cursor:pointer}
+.person .ini{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;background:var(--jungle)}
+.person.me .ini{background:var(--rosa)}
+.person.old .ini{background:#8A93AE}
+.person .nm{flex:1;font-weight:600}
+.person .ago{font-size:13px;color:var(--muted)}
+.pin{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:3px solid #fff;background:#0F5A43;color:#fff;
+  font:800 15px "Instrument Sans",sans-serif;box-shadow:0 2px 8px #0008}
+.pin.me{background:#E0156E}
+.pin.old{background:#8A93AE}
+.leaflet-tooltip.pin-name{font-weight:600;padding:2px 8px;border-radius:999px}
+
 /* Name dialog */
 dialog{border:0;border-radius:16px;padding:24px;max-width:340px;width:calc(100% - 32px);background:var(--paper);color:var(--ink)}
 dialog::backdrop{background:#0B163Ccc}
@@ -252,6 +276,7 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
       <button class="share-btn week-btn" id="weekBtn" type="button">Week calendar</button>
       <button class="share-btn" id="shareBtn" type="button">Share with the crew</button>
     </div>
+    <button class="share-btn map-btn" id="mapBtn" type="button">Where's everyone? <span class="n" id="mapCount" hidden></span></button>
   </div>
 </header>
 
@@ -322,11 +347,21 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
   <div class="wk-head"><h2 id="wkTitle">The whole week</h2><button class="btn ghost" id="weekClose" type="button">Close</button></div>
   <div class="wk-body" id="weekBody"></div>
 </dialog>
+<dialog id="mapDlg" aria-labelledby="mapTitle">
+  <div class="wk-head"><h2 id="mapTitle">Where's everyone</h2><button class="btn ghost" id="mapClose" type="button">Close</button></div>
+  <div id="crewMap"></div>
+  <div class="map-foot">
+    <button class="share-me" id="shareMe" type="button">Share my spot with the crew</button>
+    <p class="map-note" id="mapNote">Only people who turn this on show up. It updates while the planner is open on your phone.</p>
+    <div class="people" id="people"></div>
+  </div>
+</dialog>
 <button class="newver" id="newVer" type="button"><span>A new version of the planner is ready</span><span class="r">Refresh</span></button>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (() => {
   const TZ = "America/Cancun";
@@ -522,7 +557,7 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
     });
   }
 
-  function render(){ renderDays(); renderDay(); renderIdeas(); renderNotes(); renderInfo(); if (document.getElementById("weekDlg")?.open) renderWeek(); }
+  function render(){ renderDays(); renderDay(); renderIdeas(); renderNotes(); renderInfo(); if (document.getElementById("weekDlg")?.open) renderWeek(); renderMap(); }
 
   // ---------- events ----------
   $("#days").addEventListener("click", e => { const b = e.target.closest(".tile"); if (!b) return; selected = b.dataset.day; render();
@@ -591,6 +626,7 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
   const where = it => { if (it.kind !== "plan") return it.kind === "idea" ? "to ideas" : it.kind === "note" ? "to notes" : "";
     const d = DAYS.find(x => x.date === it.day); return d ? `to ${d.dow} ${(it.slot||"").toLowerCase()}` : ""; };
   function announce(type, it, prev){
+    if (it.kind === "spot") return;
     let who = "", msg = "";
     if (type === "INSERT" && !prev && it.who && it.who !== me && it.kind !== "info"){ who = it.who; msg = `${it.who} added “${it.body}” ${where(it)}`; }
     else if (prev){
@@ -610,9 +646,110 @@ dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radiu
   act.onclick = () => { act.classList.remove("show");
     if (actDay){ selected = actDay; render(); $("#daySection").scrollIntoView({block:"start"}); } };
 
+  // ---------- where's everyone (map) ----------
+  // Each person who opts in gets one "spot" row in trip_items:
+  // slot = their name, body = JSON {lat,lng,acc}, time = when it was taken.
+  const XCARET = [20.5806, -87.1197];
+  const FRESH = 15 * 60e3, SHOW_FOR = 6 * 3600e3;
+  const mapDlg = $("#mapDlg");
+  let map = null, pins = {}, watchId = null, lastSent = null, lastPos = null, beat = null, fitted = false;
+  let mySpotId = store.get("crew-spot-id");
+  const spotOf = it => { try{ const p = JSON.parse(it.body); return (isFinite(p.lat) && isFinite(p.lng)) ? p : null }catch{ return null } };
+  const spots = () => items.filter(x => x.kind === "spot" && spotOf(x) && Date.now() - Date.parse(x.time) < SHOW_FOR)
+    .sort((a,b) => (a.id === mySpotId ? -1 : b.id === mySpotId ? 1 : (a.slot||"").localeCompare(b.slot||"")));
+  const agoText = t => { const m = Math.round((Date.now() - Date.parse(t)) / 60e3);
+    return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.floor(m/60)} hr ${m%60 ? (m%60)+" min " : ""}ago`; };
+  const sharing = () => watchId !== null;
+
+  function initMap(){
+    if (map || !window.L) return;
+    map = L.map("crewMap", { zoomControl:true }).setView(XCARET, 15);
+    const street = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { maxZoom:19, attribution:"&copy; OpenStreetMap" });
+    const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom:19, attribution:"Imagery &copy; Esri" });
+    sat.addTo(map);
+    L.control.layers({ "Satellite":sat, "Map":street }, null, { position:"topright" }).addTo(map);
+  }
+
+  function renderMap(){
+    const list = spots();
+    const n = list.filter(x => Date.now() - Date.parse(x.time) < FRESH).length;
+    $("#mapCount").hidden = !n; $("#mapCount").textContent = n;
+    $("#shareMe").classList.toggle("on", sharing());
+    $("#shareMe").textContent = sharing() ? "Stop sharing my spot" : "Share my spot with the crew";
+    if (!mapDlg.open) return;
+    $("#people").innerHTML = list.length ? list.map(it => {
+      const old = Date.now() - Date.parse(it.time) > FRESH, mine = it.id === mySpotId;
+      return `<button class="person ${mine?"me":""} ${old?"old":""}" type="button" data-spot="${it.id}">
+        <span class="ini">${esc((it.slot||"?").trim().charAt(0).toUpperCase())}</span>
+        <span class="nm">${esc(it.slot||"Someone")}${mine?" (you)":""}</span><span class="ago">${agoText(it.time)}</span></button>`;
+    }).join("") : `<p class="empty">Nobody is sharing yet. Be the first.</p>`;
+    if (!map) return;
+    const seen = new Set();
+    list.forEach(it => {
+      const p = spotOf(it), old = Date.now() - Date.parse(it.time) > FRESH, mine = it.id === mySpotId;
+      const icon = L.divIcon({ className:"", iconSize:[34,34], iconAnchor:[17,17],
+        html:`<div class="pin ${mine?"me":""} ${old?"old":""}">${esc((it.slot||"?").trim().charAt(0).toUpperCase())}</div>` });
+      const label = `${esc(it.slot||"Someone")}${mine?" (you)":""}, ${agoText(it.time)}`;
+      seen.add(it.id);
+      if (pins[it.id]){ pins[it.id].setLatLng([p.lat,p.lng]).setIcon(icon).setTooltipContent(label); }
+      else pins[it.id] = L.marker([p.lat,p.lng], { icon }).bindTooltip(label, { permanent:true, direction:"top", offset:[0,-18], className:"pin-name" }).addTo(map);
+    });
+    Object.keys(pins).forEach(id => { if (!seen.has(id)){ pins[id].remove(); delete pins[id]; } });
+    if (!fitted && list.length){
+      fitted = true;
+      const pts = list.map(it => { const p = spotOf(it); return [p.lat,p.lng]; });
+      pts.length === 1 ? map.setView(pts[0], 17) : map.fitBounds(pts, { padding:[50,50], maxZoom:17 });
+    }
+  }
+
+  function sendSpot(pos, force){
+    const { latitude:lat, longitude:lng, accuracy } = pos.coords;
+    lastPos = pos;
+    const now = Date.now();
+    const moved = lastSent ? Math.hypot((lat-lastSent.lat)*111e3, (lng-lastSent.lng)*104e3) : Infinity;
+    if (!force && lastSent && now - lastSent.t < 20e3 && moved < 30) return;
+    lastSent = { lat, lng, t:now };
+    const fields = { kind:"spot", slot:me, who:me, body:JSON.stringify({ lat:+lat.toFixed(6), lng:+lng.toFixed(6), acc:Math.round(accuracy||0) }), time:new Date().toISOString() };
+    if (items.some(x => x.id === mySpotId)) patch(mySpotId, fields);
+    else { mySpotId = uid(); store.set("crew-spot-id", mySpotId); add({ ...fields, id:mySpotId }); }
+  }
+
+  function startSharing(quiet){
+    if (!navigator.geolocation){ toast("This phone can't share location."); return; }
+    if (needName()) return;
+    store.set("crew-sharing", "1");
+    watchId = navigator.geolocation.watchPosition(p => sendSpot(p), err => {
+      if (err.code === 1){ stopSharing(true); if (!quiet) alert("Location is blocked for this page. On iPhone: Settings, Privacy, Location Services, Safari Websites, then While Using."); }
+    }, { enableHighAccuracy:true, maximumAge:15e3, timeout:30e3 });
+    clearInterval(beat); beat = setInterval(() => { if (lastPos && !document.hidden) sendSpot(lastPos, true); }, 120e3);
+    if (!quiet) toast("Sharing your spot");
+    renderMap();
+  }
+  function stopSharing(keepRow){
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    watchId = null; clearInterval(beat); lastSent = null; store.set("crew-sharing", "");
+    if (!keepRow && items.some(x => x.id === mySpotId)) remove(mySpotId);
+    renderMap();
+  }
+
+  $("#mapBtn").onclick = () => {
+    mapDlg.showModal(); initMap(); fitted = false; renderMap();
+    if (map) setTimeout(() => { map.invalidateSize(); fitted = false; renderMap(); }, 60);
+  };
+  $("#mapClose").onclick = () => mapDlg.close();
+  $("#shareMe").onclick = () => sharing() ? stopSharing() : startSharing();
+  $("#people").addEventListener("click", e => {
+    const b = e.target.closest("[data-spot]"); const it = b && items.find(x => x.id === b.dataset.spot);
+    const p = it && spotOf(it); if (p && map) map.setView([p.lat,p.lng], 18);
+  });
+  setInterval(renderMap, 30e3); // keep "x min ago" fresh
+  if (store.get("crew-sharing") === "1" && me) startSharing(true);
+
   // ---------- new version alert ----------
   // Bump VERSION here AND in version.json on every push.
-  const VERSION = "1.6";
+  const VERSION = "1.7";
   $("#ver").textContent = `Version ${VERSION}`;
   async function checkVersion(){
     try{
