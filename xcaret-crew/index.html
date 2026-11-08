@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Xcaret Crew</title>
+<meta name="description" content="Our shared plan for the week at Xcaret, Nov 8–12.">
+<meta name="theme-color" content="#1B3A8F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cobalt:#1B3A8F;      /* talavera blue: text + structure */
+  --cobalt-soft:#E7ECF8;
+  --jungle:#0F5A43;      /* plans */
+  --cenote:#14A8A3;      /* ideas */
+  --marigold:#F2A900;    /* today */
+  --rosa:#E0156E;        /* actions */
+  --paper:#FFFFFF;
+  --ground:#F5F7FC;
+  --ink:#16224A;
+  --muted:#5B6688;
+  --line:#D5DCEE;
+  --radius-tile:14px;
+  --radius-sm:8px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --cobalt:#9DB4FF; --cobalt-soft:#1C2752; --jungle:#5FD3A6; --cenote:#4FD8D2;
+    --marigold:#FFC633; --rosa:#FF5FA2; --paper:#141B36; --ground:#0D1329;
+    --ink:#EEF1FB; --muted:#A6B0D3; --line:#2A3566;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font:400 16px/1.5 "Instrument Sans",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--marigold);outline-offset:2px;border-radius:6px}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+
+/* ---------- Papel picado ---------- */
+.picado{position:relative;height:96px;overflow:hidden;background:var(--cobalt)}
+.picado .string{position:absolute;left:-10px;right:-10px;top:10px;height:2px;background:#fff6;}
+.flags{position:absolute;inset:10px 0 auto;display:flex;justify-content:center;gap:6px}
+.flag{width:58px;height:74px;flex:none;transform-origin:top center;
+  animation:sway 2.6s ease-in-out 1 both;}
+.flag:nth-child(2n){animation-delay:.12s}.flag:nth-child(3n){animation-delay:.24s}
+@keyframes sway{0%{transform:rotate(0)}25%{transform:rotate(4deg)}55%{transform:rotate(-3deg)}80%{transform:rotate(1.5deg)}100%{transform:rotate(0)}}
+@media (prefers-reduced-motion:reduce){.flag{animation:none}}
+
+/* ---------- Header ---------- */
+header.top{background:var(--cobalt);color:#fff;padding:18px 0 28px}
+header.top h1{
+  font-family:"Bricolage Grotesque",sans-serif;font-weight:800;
+  font-size:clamp(44px,13vw,76px);line-height:.9;letter-spacing:-.03em;margin:0;
+  font-variation-settings:"opsz" 96;
+}
+header.top .sub{margin:12px 0 0;font-size:17px;color:#DCE4FF}
+.status{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 14px;
+  font-weight:600;font-size:14px;background:#ffffff1f;color:#fff;border:0;cursor:pointer}
+.pill.today{background:var(--marigold);color:#2B1E00;cursor:default}
+.dot{width:8px;height:8px;border-radius:50%;background:#7CF2B8}
+.dot.off{background:#FFB4B4}
+
+/* ---------- Day tiles (mahjong-tile style) ---------- */
+.days{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:-22px 0 8px;position:relative}
+.tile{
+  background:var(--paper);border:0;border-radius:var(--radius-tile);cursor:pointer;
+  padding:10px 4px 9px;text-align:center;color:var(--ink);
+  box-shadow:0 0 0 1.5px var(--line), 0 5px 0 0 var(--line);
+  transition:transform .15s, box-shadow .15s;
+}
+.tile .dow{font-size:12px;color:var(--muted);font-weight:600}
+.tile .num{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:30px;line-height:1.05;color:var(--cobalt)}
+.tile .tag{font-size:11px;color:var(--muted);min-height:15px}
+.tile[aria-pressed="true"]{transform:translateY(3px);
+  box-shadow:0 0 0 2.5px var(--cobalt), 0 2px 0 0 var(--cobalt)}
+.tile.is-today .num{color:var(--rosa)}
+.tile .count{display:inline-block;margin-top:3px;font-size:11px;font-weight:600;color:var(--jungle)}
+
+/* ---------- Sections ---------- */
+section{margin:28px 0}
+h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:28px;letter-spacing:-.02em;margin:0 0 4px;color:var(--cobalt)}
+.lede{margin:0 0 16px;color:var(--muted)}
+
+.slot{border-left:3px solid var(--jungle);padding:2px 0 6px 16px;margin:0 0 18px;position:relative}
+.slot::before{content:"";position:absolute;left:-8px;top:6px;width:13px;height:13px;border-radius:50%;
+  background:var(--ground);border:3px solid var(--jungle)}
+.slot h3{margin:0 0 8px;font-size:15px;font-weight:600;color:var(--jungle)}
+.item{background:var(--paper);border-radius:var(--radius-sm);padding:12px 14px;margin:0 0 8px;
+  box-shadow:0 0 0 1px var(--line)}
+.item .row{display:flex;gap:10px;align-items:flex-start}
+.item .what{flex:1;min-width:0}
+.item .body{font-weight:600;overflow-wrap:anywhere}
+.item .time{font-weight:600;color:var(--rosa);margin-right:6px}
+.item .meta{font-size:13px;color:var(--muted);margin-top:3px}
+.icon-btn{border:0;background:none;cursor:pointer;color:var(--muted);padding:4px 6px;border-radius:6px;font-size:18px;line-height:1}
+.icon-btn:hover{color:var(--rosa)}
+.join{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:4px 12px;
+  font-size:13px;font-weight:600;cursor:pointer;color:var(--jungle);white-space:nowrap}
+.join.on{background:var(--jungle);border-color:var(--jungle);color:#fff}
+.add{display:flex;gap:8px;margin-top:4px}
+.add input{flex:1;min-width:0;border:1.5px dashed var(--line);background:transparent;border-radius:var(--radius-sm);
+  padding:10px 12px}
+.add input:focus{border-style:solid;border-color:var(--cobalt);outline:none;background:var(--paper)}
+.add .t{flex:0 0 92px}
+.btn{border:0;border-radius:var(--radius-sm);background:var(--rosa);color:#fff;font-weight:600;padding:10px 16px;cursor:pointer}
+.btn.ghost{background:var(--cobalt-soft);color:var(--cobalt)}
+
+/* Ideas */
+.idea{display:flex;gap:12px;align-items:center}
+.vote{display:flex;flex-direction:column;align-items:center;min-width:46px;border:1.5px solid var(--line);
+  border-radius:10px;padding:4px 0;background:var(--paper);cursor:pointer;color:var(--cenote);font-weight:800}
+.vote .n{font-family:"Bricolage Grotesque",sans-serif;font-size:20px;line-height:1}
+.vote .l{font-size:11px;font-weight:600}
+.vote.on{background:var(--cenote);border-color:var(--cenote);color:#fff}
+.move{font-size:13px;border:1px solid var(--line);border-radius:6px;background:var(--paper);padding:4px 6px;color:var(--muted)}
+
+/* Info */
+.info{display:grid;gap:10px}
+.info label{display:block;font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.info input{width:100%;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;background:var(--paper)}
+
+.empty{color:var(--muted);font-size:14px;margin:0 0 8px}
+.banner{background:#FFF4D6;color:#5A4300;border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;margin:16px 0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .banner{background:#3A2F0A;color:#FFE7A3}}
+footer{color:var(--muted);font-size:13px;text-align:center;padding:24px 0 40px}
+
+/* Peso calculator */
+.calc-btn{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-top:20px;
+  border:0;border-radius:18px;background:var(--marigold);color:#2B1E00;cursor:pointer;padding:16px 20px;text-align:left;
+  box-shadow:0 5px 0 0 #B37D00}
+.calc-btn:active{transform:translateY(3px);box-shadow:0 2px 0 0 #B37D00}
+.calc-btn .big{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:26px;line-height:1.1;letter-spacing:-.01em}
+.calc-btn .small{font-size:14px;font-weight:600;opacity:.8}
+.calc-btn .sign{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:40px;line-height:1}
+#calcDlg{max-width:400px}
+.money{display:block;width:100%;border:2px solid var(--line);border-radius:12px;background:var(--ground);
+  font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:40px;padding:10px 14px;margin:6px 0 4px}
+.money:focus{outline:none;border-color:var(--cobalt)}
+.calc-label{font-size:14px;font-weight:600;color:var(--muted)}
+.result{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:44px;color:var(--jungle);line-height:1.1;margin:10px 0 2px;overflow-wrap:anywhere}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chip{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 14px;font-weight:600;cursor:pointer}
+.rate-row{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin:8px 0 18px;flex-wrap:wrap}
+.rate-row input{width:84px;border:1.5px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--ground)}
+.swap{border:0;background:var(--cobalt-soft);color:var(--cobalt);border-radius:999px;padding:6px 12px;font-weight:600;cursor:pointer}
+
+/* Name dialog */
+dialog{border:0;border-radius:16px;padding:24px;max-width:340px;width:calc(100% - 32px);background:var(--paper);color:var(--ink)}
+dialog::backdrop{background:#0B163Ccc}
+dialog h2{font-size:24px}
+dialog input{width:100%;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin:12px 0 16px;font-size:17px;background:var(--ground)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (max-width:420px){.tile .num{font-size:26px}.add .t{flex-basis:78px}}
+</style>
+</head>
+<body>
+
+<div class="picado" aria-hidden="true">
+  <div class="string"></div>
+  <div class="flags" id="flags"></div>
+</div>
+
+<header class="top">
+  <div class="wrap">
+    <h1>Xcaret Crew</h1>
+    <p class="sub">Our plan for the week, Nov 8–12. Anyone can add to it.</p>
+    <div class="status">
+      <span class="pill today" id="todayPill"></span>
+      <button class="pill" id="namePill" type="button"></button>
+      <span class="pill" id="syncPill" style="cursor:default"><span class="dot" id="syncDot"></span><span id="syncText">Connecting</span></span>
+    </div>
+    <button class="calc-btn" id="calcOpen" type="button">
+      <span><span class="big">Pesos to dollars</span><br><span class="small" id="calcRateLine">Tap to convert a price</span></span>
+      <span class="sign" aria-hidden="true">$</span>
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="days" id="days" aria-label="Pick a day"></nav>
+  <div id="banner"></div>
+
+  <section id="daySection" aria-live="polite">
+    <h2 id="dayTitle"></h2>
+    <p class="lede" id="dayLede"></p>
+    <div id="slots"></div>
+  </section>
+
+  <section>
+    <h2>Ideas</h2>
+    <p class="lede">Toss in anything. Tap the arrow if you'd go, then move the winners onto a day.</p>
+    <div id="ideas"></div>
+    <form class="add" data-kind="idea">
+      <input name="body" placeholder="Add an idea" aria-label="New idea" autocomplete="off">
+      <button class="btn" type="submit">Add</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Quick info</h2>
+    <div class="info" id="info"></div>
+  </section>
+
+  <section>
+    <h2>Notes</h2>
+    <p class="lede">Reservations, confirmation numbers, reminders.</p>
+    <div id="notes"></div>
+    <form class="add" data-kind="note">
+      <input name="body" placeholder="Add a note" aria-label="New note" autocomplete="off">
+      <button class="btn" type="submit">Add</button>
+    </form>
+  </section>
+</main>
+
+<footer>Changes show up for everyone right away.</footer>
+
+<dialog id="nameDlg">
+  <form method="dialog" id="nameForm">
+    <h2>Who's this?</h2>
+    <p class="lede" style="margin:0">So the crew knows who added what.</p>
+    <input id="nameInput" maxlength="24" placeholder="Your first name" autocomplete="given-name" required>
+    <button class="btn" style="width:100%" type="submit">Save name</button>
+  </form>
+</dialog>
+<dialog id="calcDlg" aria-labelledby="calcTitle">
+  <h2 id="calcTitle">Pesos to dollars</h2>
+  <label class="calc-label" for="calcIn" id="calcInLabel">Price in pesos</label>
+  <input class="money" id="calcIn" inputmode="decimal" placeholder="0" autocomplete="off">
+  <div class="result" id="calcOut" aria-live="polite">$0.00</div>
+  <div class="calc-label" id="calcOutLabel">US dollars</div>
+  <div class="chips" id="calcChips"></div>
+  <div class="rate-row">
+    <span>1 dollar =</span><input id="calcRate" inputmode="decimal" aria-label="Pesos per dollar"><span>pesos</span>
+    <span id="calcRateSrc"></span>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="swap" id="calcSwap" type="button">Switch to dollars to pesos</button>
+    <button class="btn" id="calcClose" type="button" style="margin-left:auto">Done</button>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(() => {
+  const TZ = "America/Cancun";
+  const DAYS = [
+    { date:"2026-11-08", dow:"Sun", num:8,  tag:"Arrive",  title:"Sunday, arrival day", slots:["Afternoon","Dinner","Night"] },
+    { date:"2026-11-09", dow:"Mon", num:9,  tag:"",        title:"Monday",               slots:["Morning","Afternoon","Dinner","Night"] },
+    { date:"2026-11-10", dow:"Tue", num:10, tag:"",        title:"Tuesday",              slots:["Morning","Afternoon","Dinner","Night"] },
+    { date:"2026-11-11", dow:"Wed", num:11, tag:"",        title:"Wednesday",            slots:["Morning","Afternoon","Dinner","Night"] },
+    { date:"2026-11-12", dow:"Thu", num:12, tag:"Home",    title:"Thursday, heading home", slots:["Checkout","Ride to airport"] },
+  ];
+  const INFO = [
+    { key:"chat", label:"Group chat", placeholder:"WhatsApp group" },
+    { key:"base", label:"Home base", placeholder:"Hotel Xcaret" },
+    { key:"meet", label:"Meet-up spot if we get separated", placeholder:"Lobby bar?" },
+  ];
+
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const store = {
+    get(k){ try{ return localStorage.getItem(k) }catch{ return null } },
+    set(k,v){ try{ localStorage.setItem(k,v) }catch{} }
+  };
+
+  // ---------- papel picado ----------
+  const colors = ["#E0156E","#F2A900","#14A8A3","#7CC242","#FF7A1A","#B04FD6"];
+  const flagSvg = c => `<svg class="flag" viewBox="0 0 58 74"><path fill="${c}" d="M0 0h58v62l-5 6-5-6-5 6-5-6-5 6-4-6-5 6-5-6-5 6-5-6-4 6-5-6z"/>
+    <g fill="#1B3A8F"><circle cx="29" cy="26" r="7"/><circle cx="12" cy="12" r="3"/><circle cx="46" cy="12" r="3"/><circle cx="12" cy="44" r="3"/><circle cx="46" cy="44" r="3"/>
+    <path d="M29 40l4 7h-8z"/><path d="M29 12l3 5h-6z"/><rect x="18" y="52" width="22" height="3" rx="1.5"/></g></svg>`;
+  $("#flags").innerHTML = Array.from({length:16},(_,i)=>flagSvg(colors[i%colors.length])).join("");
+
+  // ---------- today ----------
+  const todayISO = new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const todayIdx = DAYS.findIndex(d => d.date === todayISO);
+  const tp = $("#todayPill");
+  if (todayIdx >= 0) tp.textContent = `Day ${todayIdx+1} of ${DAYS.length}`;
+  else if (todayISO < DAYS[0].date) {
+    const n = Math.round((new Date(DAYS[0].date) - new Date(todayISO)) / 864e5);
+    tp.textContent = `${n} day${n===1?"":"s"} to go`;
+  } else tp.textContent = "Trip's over. Good times.";
+  let selected = DAYS[Math.max(0, todayIdx)].date;
+
+  // ---------- name ----------
+  let me = store.get("crew-name") || "";
+  const namePill = $("#namePill");
+  const paintName = () => namePill.textContent = me ? `You're ${me}. Change` : "Add your name";
+  paintName();
+  const dlg = $("#nameDlg");
+  const askName = () => { $("#nameInput").value = me; dlg.showModal(); };
+  namePill.onclick = askName;
+  $("#nameForm").onsubmit = () => { const v = $("#nameInput").value.trim(); if (v){ me = v; store.set("crew-name", v); paintName(); render(); } };
+  const needName = () => { if (!me){ askName(); return true } return false };
+
+  // ---------- data layer ----------
+  const cfg = window.PLANNER_CONFIG || {};
+  const live = !!(cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase);
+  const db = live ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey) : null;
+  let items = [];
+
+  const setSync = (ok, text) => { $("#syncDot").classList.toggle("off", !ok); $("#syncText").textContent = text; };
+  const toast = msg => { const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1800); };
+  const saveLocal = () => store.set("crew-items", JSON.stringify(items));
+  const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()));
+
+  async function load(){
+    if (!live){
+      try{ items = JSON.parse(store.get("crew-items") || "null") || null }catch{ items = null }
+      if (!items){ items = [{id:uid(),kind:"plan",day:"2026-11-08",slot:"Dinner",time:"6:00 PM",body:"Dinner at Arenal",who:"Matt",votes:[],created_at:new Date().toISOString()}]; saveLocal(); }
+      setSync(false,"Only on this phone");
+      $("#banner").innerHTML = `<div class="banner">This planner isn't connected yet, so changes stay on this phone. Once it's connected, everyone sees the same plan.</div>`;
+      render(); return;
+    }
+    const { data, error } = await db.from("trip_items").select("*").order("created_at");
+    if (error){ setSync(false,"Can't reach the planner"); toast("Couldn't load. Check your connection."); return; }
+    items = data; setSync(true,"Live"); render();
+    db.channel("crew").on("postgres_changes",{event:"*",schema:"public",table:"trip_items"}, p => {
+      if (p.eventType === "DELETE") items = items.filter(i => i.id !== p.old.id);
+      else { const i = items.findIndex(x => x.id === p.new.id); i >= 0 ? items[i] = p.new : items.push(p.new); }
+      render();
+    }).subscribe(s => { if (s === "SUBSCRIBED") setSync(true,"Live"); if (s === "CHANNEL_ERROR" || s === "TIMED_OUT") setSync(false,"Reconnecting"); });
+  }
+
+  async function add(row){
+    const rec = { id:uid(), votes:[], created_at:new Date().toISOString(), who:me, ...row };
+    items.push(rec); render();
+    if (!live) return saveLocal();
+    const { error } = await db.from("trip_items").insert(rec);
+    if (error){ items = items.filter(i => i.id !== rec.id); render(); toast("Didn't save. Try again."); }
+  }
+  async function patch(id, fields){
+    const it = items.find(i => i.id === id); if (!it) return;
+    const before = { ...it }; Object.assign(it, fields); render();
+    if (!live) return saveLocal();
+    const { error } = await db.from("trip_items").update(fields).eq("id", id);
+    if (error){ Object.assign(it, before); render(); toast("Didn't save. Try again."); }
+  }
+  async function remove(id){
+    const it = items.find(i => i.id === id); if (!it) return;
+    items = items.filter(i => i.id !== id); render(); toast("Removed");
+    if (!live) return saveLocal();
+    const { error } = await db.from("trip_items").delete().eq("id", id);
+    if (error){ items.push(it); render(); toast("Couldn't remove. Try again."); }
+  }
+  const toggleVote = it => {
+    if (needName()) return;
+    const v = new Set(it.votes || []); v.has(me) ? v.delete(me) : v.add(me);
+    patch(it.id, { votes:[...v] });
+  };
+
+  // ---------- render ----------
+  const timeKey = t => { if(!t) return 9999; const m=t.match(/(\d{1,2})(?::(\d{2}))?\s*([ap])?/i); if(!m) return 9998;
+    let h=+m[1]%12; if((m[3]||"").toLowerCase()==="p") h+=12; return h*60+(+m[2]||0); };
+  const joinedText = v => !v?.length ? "" : v.length <= 3 ? v.join(", ") + (v.length===1?" is in":" are in") : `${v.slice(0,2).join(", ")} +${v.length-2} are in`;
+
+  function renderDays(){
+    $("#days").innerHTML = DAYS.map((d,i) => {
+      const n = items.filter(x => x.kind==="plan" && x.day===d.date).length;
+      return `<button class="tile ${i===todayIdx?"is-today":""}" type="button" data-day="${d.date}" aria-pressed="${d.date===selected}">
+        <div class="dow">${d.dow}</div><div class="num">${d.num}</div>
+        <div class="tag">${d.tag || (i===todayIdx?"Today":"")}</div>
+        <div class="count">${n ? n + (n===1?" plan":" plans") : "&nbsp;"}</div></button>`;
+    }).join("");
+  }
+
+  function planItem(it){
+    const on = (it.votes||[]).includes(me);
+    return `<div class="item"><div class="row">
+      <div class="what"><div class="body">${it.time?`<span class="time">${esc(it.time)}</span>`:""}${esc(it.body)}</div>
+      <div class="meta">${it.who?`Added by ${esc(it.who)}`:""}${it.votes?.length?`. ${esc(joinedText(it.votes))}`:""}</div></div>
+      <button class="join ${on?"on":""}" data-act="vote" data-id="${it.id}" type="button">${on?"I'm in ✓":"I'm in"}</button>
+      <button class="icon-btn" data-act="del" data-id="${it.id}" type="button" aria-label="Remove ${esc(it.body)}">×</button>
+    </div></div>`;
+  }
+
+  function renderDay(){
+    const d = DAYS.find(x => x.date === selected);
+    $("#dayTitle").textContent = d.title;
+    const plans = items.filter(x => x.kind==="plan" && x.day===d.date);
+    $("#dayLede").textContent = plans.length ? `${plans.length} thing${plans.length===1?"":"s"} planned so far.` : "Nothing planned yet. Add the first thing.";
+    const slotNames = [...d.slots, ...new Set(plans.map(p=>p.slot).filter(s => s && !d.slots.includes(s)))];
+    $("#slots").innerHTML = slotNames.map(s => {
+      const list = plans.filter(p => p.slot===s).sort((a,b)=>timeKey(a.time)-timeKey(b.time));
+      return `<div class="slot"><h3>${esc(s)}</h3>${list.map(planItem).join("")}
+        <form class="add" data-kind="plan" data-slot="${esc(s)}">
+          <input name="body" placeholder="Add to ${esc(s.toLowerCase())}" aria-label="Add a plan for ${esc(s)}" autocomplete="off">
+          <input class="t" name="time" placeholder="Time" aria-label="Time (optional)" autocomplete="off">
+          <button class="btn" type="submit">Add</button>
+        </form></div>`;
+    }).join("");
+  }
+
+  function renderIdeas(){
+    const ideas = items.filter(x => x.kind==="idea").sort((a,b)=>(b.votes?.length||0)-(a.votes?.length||0) || a.created_at.localeCompare(b.created_at));
+    $("#ideas").innerHTML = ideas.length ? ideas.map(it => {
+      const on = (it.votes||[]).includes(me);
+      return `<div class="item idea">
+        <button class="vote ${on?"on":""}" data-act="vote" data-id="${it.id}" type="button" aria-pressed="${on}" aria-label="I'd go: ${esc(it.body)}">
+          <span aria-hidden="true">▲</span><span class="n">${it.votes?.length||0}</span><span class="l">I'd go</span></button>
+        <div class="what"><div class="body">${esc(it.body)}</div>
+          <div class="meta">${it.who?`From ${esc(it.who)}`:""}${it.votes?.length?`. ${esc(it.votes.join(", "))}`:""}</div></div>
+        <select class="move" data-act="move" data-id="${it.id}" aria-label="Move to a day">
+          <option value="">Move to…</option>${DAYS.map(d=>`<option value="${d.date}">${d.dow} ${d.num}</option>`).join("")}</select>
+        <button class="icon-btn" data-act="del" data-id="${it.id}" type="button" aria-label="Remove ${esc(it.body)}">×</button>
+      </div>`;}).join("") : `<p class="empty">No ideas yet. Swim with dolphins? Xplor at night? Add one.</p>`;
+  }
+
+  function renderNotes(){
+    const notes = items.filter(x => x.kind==="note");
+    $("#notes").innerHTML = notes.length ? notes.map(it => `<div class="item"><div class="row">
+      <div class="what"><div class="body">${esc(it.body)}</div><div class="meta">${it.who?`From ${esc(it.who)}`:""}</div></div>
+      <button class="icon-btn" data-act="del" data-id="${it.id}" type="button" aria-label="Remove note">×</button></div></div>`).join("")
+      : `<p class="empty">Nothing here yet.</p>`;
+  }
+
+  function renderInfo(){
+    const host = $("#info");
+    const focused = document.activeElement?.dataset?.info;
+    INFO.forEach(f => {
+      let el = host.querySelector(`[data-info="${f.key}"]`);
+      const it = items.find(x => x.kind==="info" && x.slot===f.key);
+      if (!el){
+        const wrap = document.createElement("div");
+        wrap.innerHTML = `<label for="info-${f.key}">${esc(f.label)}</label><input id="info-${f.key}" data-info="${f.key}" placeholder="${esc(f.placeholder)}" autocomplete="off">`;
+        host.appendChild(wrap); el = wrap.querySelector("input");
+        el.addEventListener("change", () => {
+          const val = el.value.trim(); const cur = items.find(x => x.kind==="info" && x.slot===f.key);
+          if (cur) val ? patch(cur.id,{body:val, who:me}) : remove(cur.id);
+          else if (val) add({kind:"info", slot:f.key, body:val});
+          if (val) toast("Saved");
+        });
+      }
+      if (focused !== f.key) el.value = it?.body || "";
+    });
+  }
+
+  function render(){ renderDays(); renderDay(); renderIdeas(); renderNotes(); renderInfo(); }
+
+  // ---------- events ----------
+  $("#days").addEventListener("click", e => { const b = e.target.closest(".tile"); if (!b) return; selected = b.dataset.day; render();
+    $("#daySection").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"}); });
+
+  document.addEventListener("submit", e => {
+    const f = e.target.closest("form.add"); if (!f) return; e.preventDefault();
+    if (needName()) return;
+    const body = f.body.value.trim(); if (!body) return f.body.focus();
+    const row = { kind:f.dataset.kind, body };
+    if (row.kind === "plan"){ row.day = selected; row.slot = f.dataset.slot; row.time = f.time.value.trim() || null; }
+    add(row); f.reset(); toast("Added");
+    if (row.kind !== "plan") f.body.focus();
+  });
+
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-act]"); if (!b || b.tagName === "SELECT") return;
+    const it = items.find(i => i.id === b.dataset.id); if (!it) return;
+    if (b.dataset.act === "vote") toggleVote(it);
+    if (b.dataset.act === "del" && confirm(`Remove "${it.body}"?`)) remove(it.id);
+  });
+
+  document.addEventListener("change", e => {
+    const s = e.target.closest('select[data-act="move"]'); if (!s || !s.value) return;
+    const it = items.find(i => i.id === s.dataset.id); if (!it) return;
+    const day = DAYS.find(d => d.date === s.value);
+    patch(it.id, { kind:"plan", day:day.date, slot:day.slots[Math.min(1, day.slots.length-1)] });
+    selected = day.date; toast(`Moved to ${day.dow} ${day.num}`); render();
+  });
+
+  // ---------- peso calculator ----------
+  let rate = parseFloat(store.get("crew-rate")) || 18.5, rateSrc = store.get("crew-rate-src") || "estimate", toUsd = true;
+  const fmtUsd = n => n.toLocaleString("en-US",{style:"currency",currency:"USD"});
+  const fmtMxn = n => n.toLocaleString("en-US",{style:"currency",currency:"MXN",currencyDisplay:"narrowSymbol"}) + " MXN";
+  const calcIn = $("#calcIn"), calcDlg = $("#calcDlg");
+  function calc(){
+    const v = parseFloat(calcIn.value.replace(/[^0-9.]/g,"")) || 0;
+    $("#calcOut").textContent = toUsd ? fmtUsd(v / rate) : fmtMxn(v * rate);
+    $("#calcInLabel").textContent = toUsd ? "Price in pesos" : "Amount in dollars";
+    $("#calcOutLabel").textContent = toUsd ? "US dollars" : "Mexican pesos";
+    $("#calcTitle").textContent = toUsd ? "Pesos to dollars" : "Dollars to pesos";
+    $("#calcSwap").textContent = toUsd ? "Switch to dollars to pesos" : "Switch to pesos to dollars";
+    $("#calcChips").innerHTML = (toUsd ? [100,200,500,1000,2000] : [10,20,50,100,200])
+      .map(n => `<button class="chip" type="button" data-amt="${n}">${toUsd ? "$"+n.toLocaleString()+" MXN" : "$"+n+" USD"}</button>`).join("");
+  }
+  function paintRate(){
+    $("#calcRate").value = rate.toFixed(2);
+    $("#calcRateSrc").textContent = rateSrc === "live" ? "(today's rate)" : "(estimate, edit if needed)";
+    $("#calcRateLine").textContent = `1 dollar = ${rate.toFixed(2)} pesos. Tap to convert a price`;
+    calc();
+  }
+  $("#calcOpen").onclick = () => { calcDlg.showModal(); calcIn.focus(); };
+  $("#calcClose").onclick = () => calcDlg.close();
+  calcDlg.addEventListener("click", e => { if (e.target === calcDlg) calcDlg.close(); });
+  calcIn.addEventListener("input", calc);
+  $("#calcSwap").onclick = () => { toUsd = !toUsd; calcIn.value = ""; calc(); calcIn.focus(); };
+  $("#calcChips").addEventListener("click", e => { const c = e.target.closest("[data-amt]"); if (c){ calcIn.value = c.dataset.amt; calc(); } });
+  $("#calcRate").addEventListener("change", e => { const r = parseFloat(e.target.value); if (r > 1 && r < 100){ rate = r; rateSrc = "manual"; store.set("crew-rate", r); store.set("crew-rate-src","manual"); } paintRate(); });
+  paintRate();
+  fetch("https://open.er-api.com/v6/latest/USD").then(r => r.json()).then(d => {
+    const r = d?.rates?.MXN; if (r && rateSrc !== "manual"){ rate = r; rateSrc = "live"; store.set("crew-rate", r); store.set("crew-rate-src","live"); paintRate(); }
+  }).catch(() => {});
+
+  load();
+})();
+</script>
+</body>
+</html>
