@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mahj Night</title>
-<meta name="theme-color" content="#0F3D33">
+<meta name="theme-color" content="#1B1230">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Mahj Night">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,21 +19,23 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Ma+Shan+Zheng&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
   --felt:#0F3D33; --felt-2:#145040; --felt-deep:#0A2C25; --rail:#06201A;
+  --night:#1F1335; --night-2:#35204F; --night-deep:#120B20; --blossom:#F6B3C9; --lacquer:#C8322B;
+  --zh:"Ma Shan Zheng","Noto Serif CJK SC","Songti SC","STKaiti",serif;
   --ivory:#F6F0E1; --bone:#E4D9BF; --ink:#22201B;
   --crak:#E0453A; --dot:#2F7BD6; --bam:#3DB36B; --gold:#F2B630; --plum:#A66CE8; --teal:#1FB5B0;
-  --text:#EAF3EE; --muted:#9FC2B4;
+  --text:#F4ECF4; --muted:#C7B3D6;
   --display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
   --body:"Nunito",ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-html{background:var(--felt-deep)}
+html{background:var(--night-deep)}
 body{
-  background:radial-gradient(120% 70% at 50% -10%,var(--felt-2),var(--felt) 45%,var(--felt-deep));
+  background:radial-gradient(120% 70% at 50% -10%,var(--night-2),var(--night) 45%,var(--night-deep));
   color:var(--text); font:500 16px/1.45 var(--body);
   min-height:100vh; padding-bottom:calc(84px + env(safe-area-inset-bottom));
   -webkit-tap-highlight-color:transparent;
@@ -65,7 +67,7 @@ header{padding:calc(14px + env(safe-area-inset-top)) 0 6px}
 .b-update{background:var(--gold);color:var(--ink)} .b-update button{background:var(--ink);color:var(--gold)}
 .b-activity{background:var(--dot);color:#fff} .b-activity button{background:#fff;color:var(--dot)}
 .b-activity .x{background:transparent;color:#fff;padding:6px}
-.b-local{background:rgba(242,182,48,.15);color:var(--gold);border:1px solid rgba(242,182,48,.4)}
+.b-local{background:#2E2338;color:var(--gold);border:1px solid rgba(242,182,48,.4)}
 
 /* section heads */
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:20px 0 10px}
@@ -83,14 +85,15 @@ header{padding:calc(14px + env(safe-area-inset-top)) 0 6px}
 
 /* the table card */
 .tables{display:grid;gap:18px}
-.tcard{background:rgba(0,0,0,.18);border-radius:26px;padding:14px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
+.tcard{background:rgba(18,11,32,.72);border-radius:26px;padding:14px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
 .felt{position:relative;aspect-ratio:1/0.82;margin:4px 6px 10px;border-radius:30px;
   background:radial-gradient(circle at 50% 45%,#1C7A5F,#12573F 70%);
   box-shadow:inset 0 0 0 9px var(--rail),inset 0 0 0 11px #2A6B57,0 10px 24px rgba(0,0,0,.35)}
 .tnum{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:66px;height:84px;border-radius:12px;background:var(--ivory);color:var(--ink);
   display:grid;place-items:center;text-align:center;box-shadow:0 5px 0 var(--tc,var(--crak))}
-.tnum b{font:400 44px/1 var(--display);color:var(--tc,var(--crak))}
-.tnum small{display:block;font-size:11px;font-weight:900;margin-top:-6px;color:#6b6250}
+.tnum b{font:400 48px/1 var(--zh);color:var(--tc,var(--crak))}
+.tnum small{display:block;font-size:11px;font-weight:900;margin-top:2px;color:#6b6250}
+.seat .w{position:absolute;left:-8px;top:-9px;width:22px;height:22px;border-radius:5px;background:var(--lacquer);color:var(--ivory);font:400 15px/22px var(--zh);text-align:center;transform:rotate(-8deg);box-shadow:0 1px 3px rgba(0,0,0,.4)}
 .seat{position:absolute;transform:translate(-50%,-50%);border:0;min-width:92px;max-width:46%;padding:7px 10px 6px;border-radius:11px;background:var(--ivory);color:var(--ink);
   box-shadow:0 4px 0 var(--pc);text-align:center;line-height:1.1;transition:transform .15s}
 .seat .n{display:block;font-weight:900;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -117,7 +120,7 @@ header{padding:calc(14px + env(safe-area-inset-top)) 0 6px}
 
 /* games log */
 .glist{display:grid;gap:10px}
-.game{background:rgba(0,0,0,.2);border-radius:16px;padding:12px 14px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
+.game{background:rgba(18,11,32,.72);border-radius:16px;padding:12px 14px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
 .game .l1{display:flex;gap:8px;align-items:baseline}
 .game .l1 b{font-size:17px;font-weight:900;flex:1}
 .game .l1 small{color:var(--muted);font-weight:700;font-size:13px;white-space:nowrap}
@@ -138,14 +141,14 @@ header{padding:calc(14px + env(safe-area-inset-top)) 0 6px}
 .ptile button{border:0;background:transparent;color:#8f8670;font-weight:900;padding:0 6px;font-size:18px;line-height:1}
 .ptile.out{opacity:.5;box-shadow:0 4px 0 #8f8670}
 .ptile.out button{font-size:13px;color:var(--ink)}
-.card{background:rgba(0,0,0,.18);border-radius:20px;padding:16px;margin-top:16px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
+.card{background:rgba(18,11,32,.72);border-radius:20px;padding:16px;margin-top:16px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
 .card h3{font:400 22px/1 var(--display);margin:0 0 10px}
 .card p{margin:0 0 12px;color:var(--muted);font-weight:700;font-size:14px}
 .empty{text-align:center;padding:30px 10px;color:var(--muted);font-weight:700}
 .empty .big{font:400 26px/1.1 var(--display);color:var(--text);margin-bottom:8px}
 
 /* tab bar */
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(6,32,26,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(18,11,32,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:6px;border-top:1px solid rgba(255,255,255,.08)}
 nav.tabs button{flex:1;max-width:130px;border:0;background:transparent;border-radius:14px;padding:7px 4px;font-weight:800;font-size:13px;color:var(--muted);display:grid;justify-items:center;gap:3px}
 nav.tabs button .ic{width:26px;height:20px;border-radius:5px;background:rgba(255,255,255,.1);display:grid;place-items:center}
@@ -160,7 +163,7 @@ nav.tabs button[data-tab=players][aria-selected=true] .ic i{background:var(--bam
 /* sheets */
 dialog{border:0;padding:0;background:transparent;color:var(--text);max-width:560px;width:100%;margin:auto auto 0;max-height:92vh}
 dialog::backdrop{background:rgba(0,0,0,.55)}
-.sheet{background:var(--felt-deep);border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -1px 0 rgba(255,255,255,.1)}
+.sheet{background:#1A1029;border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -1px 0 rgba(255,255,255,.1)}
 .sheet h3{font:400 26px/1 var(--display);margin:0 0 4px}
 .sheet .lead{color:var(--muted);font-weight:700;font-size:14px;margin:0 0 14px}
 .q{font-weight:900;margin:14px 0 8px;font-size:15px}
@@ -181,7 +184,7 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 /* home */
 .hero{text-align:center;padding:40px 0 10px}
 .hero .tiles{display:flex;justify-content:center;gap:10px;margin-bottom:22px}
-.hero .tile{width:58px;height:78px;border-radius:12px;background:var(--ivory);display:grid;place-items:center;font:400 30px/1 var(--display)}
+.hero .tile{width:58px;height:78px;border-radius:12px;background:var(--ivory);display:grid;place-items:center;font:400 40px/1 var(--zh)}
 .hero .tile:nth-child(1){box-shadow:0 6px 0 var(--crak);color:var(--crak);transform:rotate(-8deg)}
 .hero .tile:nth-child(2){box-shadow:0 6px 0 var(--dot);color:var(--dot);transform:translateY(-8px)}
 .hero .tile:nth-child(3){box-shadow:0 6px 0 var(--bam);color:var(--bam);transform:rotate(7deg)}
@@ -198,6 +201,16 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .code{text-align:center;margin-top:12px}
 .code small{display:block;color:var(--muted);font-weight:800;font-size:13px}
 .code b{font:400 40px/1.1 var(--display);letter-spacing:6px;color:var(--gold)}
+/* scenery */
+.wrap{position:relative;z-index:1}
+.scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.scene .branch{position:absolute;right:-40px;top:-30px;width:240px;opacity:.6}
+.scene .parasol{position:absolute;left:-60px;bottom:70px;width:250px;opacity:.3;transform:rotate(-18deg)}
+.scene .chars{position:absolute;right:10px;top:42%;writing-mode:vertical-rl;font:400 92px/1 var(--zh);color:rgba(246,179,201,.07);letter-spacing:10px}
+.petal{position:absolute;top:-30px;width:12px;height:10px;background:var(--blossom);border-radius:12px 0 12px 0;opacity:.8;animation:fall linear infinite}
+@keyframes fall{0%{transform:translate(0,-5vh) rotate(0)}50%{transform:translate(-40px,50vh) rotate(200deg)}100%{transform:translate(20px,110vh) rotate(400deg)}}
+@media (prefers-reduced-motion:reduce){.petal{display:none}}
+.brand .zh{font:400 20px/1 var(--zh);color:var(--gold);margin-left:2px;flex:none}
 footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;padding:30px 0 10px}
 .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ivory);color:var(--ink);font-weight:800;padding:10px 16px;border-radius:999px;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:90vw}
 @keyframes pop{0%{transform:translate(-50%,-50%) scale(.6)}70%{transform:translate(-50%,-50%) scale(1.08)}100%{transform:translate(-50%,-50%) scale(1)}}
@@ -206,10 +219,27 @@ footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;paddi
 </style>
 </head>
 <body>
+<div class="scene" aria-hidden="true">
+  <svg class="branch" viewBox="0 0 320 260"><defs><g id="bl"><g fill="#F6B3C9"><ellipse cy="-9" rx="6" ry="9"/><ellipse cy="-9" rx="6" ry="9" transform="rotate(72)"/><ellipse cy="-9" rx="6" ry="9" transform="rotate(144)"/><ellipse cy="-9" rx="6" ry="9" transform="rotate(216)"/><ellipse cy="-9" rx="6" ry="9" transform="rotate(288)"/></g><circle r="3.5" fill="#C8322B"/></g>
+      <g id="bud"><ellipse rx="5" ry="7" fill="#FFD9E4"/></g></defs>
+    <path d="M330 10 C280 40 240 70 205 95 C170 120 130 150 60 222 M240 70 C255 95 262 115 262 120 M205 95 C190 80 170 78 160 80 M150 140 C140 140 130 150 120 160" stroke="#4A2A3A" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <use href="#bl" transform="translate(285 25) scale(1.4)"/> <use href="#bl" transform="translate(250 58) scale(1.1)"/> <use href="#bud" transform="translate(232 40) scale(1)"/> <use href="#bl" transform="translate(205 95) scale(1.3)"/> <use href="#bl" transform="translate(172 118) scale(0.9)"/> <use href="#bud" transform="translate(150 140) scale(1)"/> <use href="#bl" transform="translate(120 160) scale(1.2)"/> <use href="#bl" transform="translate(95 195) scale(0.8)"/> <use href="#bud" transform="translate(80 175) scale(0.9)"/> <use href="#bl" transform="translate(262 120) scale(1)"/> <use href="#bl" transform="translate(240 150) scale(0.8)"/> <use href="#bud" transform="translate(280 95) scale(1)"/> <use href="#bl" transform="translate(160 80) scale(0.9)"/> <use href="#bl" transform="translate(60 222) scale(1)"/>
+  </svg>
+  <svg class="parasol" viewBox="0 0 240 240">
+    <path d="M120 120 L120 235" stroke="#6E4A2A" stroke-width="5" stroke-linecap="round"/>
+    <path d="M10 120 A110 110 0 0 1 230 120 Z" fill="#C8322B"/>
+    <g fill="#A52520"><path d="M120 120 L10 120 A110 110 0 0 1 24 66 Z"/><path d="M120 120 L45 39 A110 110 0 0 1 98 12 Z"/><path d="M120 120 L142 12 A110 110 0 0 1 195 39 Z"/><path d="M120 120 L216 66 A110 110 0 0 1 230 120 Z"/></g>
+    <g stroke="#F2B630" stroke-width="2" opacity=".8"><path d="M120 120 L10 120"/><path d="M120 120 L24 66"/><path d="M120 120 L45 39"/><path d="M120 120 L98 12"/><path d="M120 120 L142 12"/><path d="M120 120 L195 39"/><path d="M120 120 L216 66"/><path d="M120 120 L230 120"/></g>
+    <path d="M10 120 A110 110 0 0 1 230 120" fill="none" stroke="#F2B630" stroke-width="3"/>
+    <circle cx="120" cy="8" r="6" fill="#F2B630"/>
+  </svg>
+  <div class="chars">麻將</div>
+  <span class="petal" style="left:8%;animation-duration:14s;animation-delay:-2s;transform:scale(1)"></span><span class="petal" style="left:22%;animation-duration:18s;animation-delay:-9s;transform:scale(0.8)"></span><span class="petal" style="left:37%;animation-duration:16s;animation-delay:-5s;transform:scale(1.1)"></span><span class="petal" style="left:52%;animation-duration:20s;animation-delay:-12s;transform:scale(0.7)"></span><span class="petal" style="left:66%;animation-duration:15s;animation-delay:-1s;transform:scale(1)"></span><span class="petal" style="left:78%;animation-duration:19s;animation-delay:-7s;transform:scale(0.9)"></span><span class="petal" style="left:90%;animation-duration:17s;animation-delay:-13s;transform:scale(1)"></span><span class="petal" style="left:45%;animation-duration:22s;animation-delay:-16s;transform:scale(0.8)"></span>
+</div>
 <div class="wrap">
   <header id="hdr" class="hidden">
     <div class="top">
-      <div class="brand"><img src="icon.svg" alt=""><h1 id="title">Mahj night</h1></div>
+      <div class="brand"><img src="icon-192.png" alt=""><h1 id="title">Mahj night</h1><span class="zh" aria-hidden="true">麻將</span></div>
       <button class="pill" id="shareBtn" type="button">Share</button>
     </div>
     <div class="sub"><span class="status" id="status"><i></i><span>Connecting</span></span><span id="roundLbl"></span></div>
@@ -238,7 +268,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;paddi
 <script>
 (() => {
   // Bump VERSION here AND in version.json on every push.
-  const VERSION = "1.1";
+  const VERSION = "1.2";
 
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -249,6 +279,8 @@ footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;paddi
   };
   const COLORS = ["var(--crak)","var(--dot)","var(--bam)","var(--gold)","var(--plum)","var(--teal)"];
   const TABLE_COLORS = ["var(--crak)","var(--dot)","var(--bam)","#C48F10","var(--plum)","var(--teal)"];
+  const zhNum = n => { const d = "零一二三四五六七八九"; return n <= 10 ? (n === 10 ? "十" : d[n]) : n < 20 ? "十" + d[n-10] : String(n); };
+  const WINDS = ["東","北","西","南"]; // bottom, left, top, right: play goes east, south, west, north
   const fmt = n => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n);
   const cls = n => n > 0 ? "pos" : n < 0 ? "neg" : "";
 
@@ -520,10 +552,10 @@ footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;paddi
         const gh = gamesHere(ti);
         return `<section class="tcard" id="table-${ti}">
           <div class="felt">
-            <div class="tnum" style="--tc:${tc}"><div><b>${ti + 1}</b><small>Table</small></div></div>
+            <div class="tnum" style="--tc:${tc}"><div><b>${zhNum(ti + 1)}</b><small>Table ${ti + 1}</small></div></div>
             ${t.map((id, i) => { const p = seatPos(i, t.length); const rp = S.roundPts[id] || 0;
               return `<button type="button" class="seat ${swapSel === id ? "sel" : ""} ${lastMoved.has(id) ? "moved" : ""}" data-seat="${id}" style="left:${p.x}%;top:${p.y}%;--pc:${color(id)}">
-                <span class="n">${esc(name(id))}</span><span class="p ${cls(rp)}">${rp ? fmt(rp) : "0"}</span></button>`; }).join("")}
+                ${t.length === 4 ? `<span class="w">${WINDS[i]}</span>` : ""}<span class="n">${esc(name(id))}</span><span class="p ${cls(rp)}">${rp ? fmt(rp) : "0"}</span></button>`; }).join("")}
           </div>
           <div class="tfoot"><span class="meta">${gh ? `${gh} game${gh>1?"s":""} this round` : "No games yet"}</span>
             <button class="btn btn-crak" type="button" data-act="record" data-table="${ti}">Record a game</button></div>
@@ -832,7 +864,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;paddi
   function renderHome(){
     const list = recent();
     $("#main").innerHTML = `<div class="hero">
-        <div class="tiles" aria-hidden="true"><span class="tile">1</span><span class="tile">2</span><span class="tile">3</span><span class="tile">4</span></div>
+        <div class="tiles" aria-hidden="true"><span class="tile">麻</span><span class="tile">將</span><span class="tile">之</span><span class="tile">夜</span></div>
         <h1>Mahj Night</h1>
         <p>Seat the tables, score every hand and move players between rounds. Everyone follows along on their phone.</p>
       </div>
