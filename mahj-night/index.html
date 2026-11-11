@@ -10,6 +10,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="description" content="Tables, scores and seat moves for mahjong night. Follow along live on your phone.">
+<meta property="og:title" content="Mahj Night">
+<meta property="og:description" content="Tables, scores and seat moves for mahjong night. Follow along live on your phone.">
+<meta property="og:image" content="https://dragonpony1.github.io/saturday-football/mahj-night/icon-512.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -186,6 +192,12 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .recent a{display:flex;justify-content:space-between;gap:10px;text-decoration:none;color:var(--ink);background:var(--ivory);padding:12px 14px;border-radius:14px;font-weight:900;box-shadow:0 4px 0 var(--dot)}
 .recent a small{color:#6b6250;font-weight:700}
 
+.qr{background:#fff;border-radius:18px;padding:10px;width:min(260px,70vw);margin:4px auto 0;box-shadow:0 5px 0 var(--gold)}
+.qr svg{display:block;width:100%;height:auto}
+.qrnote{text-align:center;color:var(--muted);font-weight:700;font-size:13px;margin:10px 0 0}
+.code{text-align:center;margin-top:12px}
+.code small{display:block;color:var(--muted);font-weight:800;font-size:13px}
+.code b{font:400 40px/1.1 var(--display);letter-spacing:6px;color:var(--gold)}
 footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;padding:30px 0 10px}
 .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ivory);color:var(--ink);font-weight:800;padding:10px 16px;border-radius:999px;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:90vw}
 @keyframes pop{0%{transform:translate(-50%,-50%) scale(.6)}70%{transform:translate(-50%,-50%) scale(1.08)}100%{transform:translate(-50%,-50%) scale(1)}}
@@ -222,10 +234,11 @@ footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;paddi
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script>
 (() => {
   // Bump VERSION here AND in version.json on every push.
-  const VERSION = "1.0";
+  const VERSION = "1.1";
 
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -767,12 +780,36 @@ footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;paddi
   }
 
   // ---------- share ----------
-  $("#shareBtn").onclick = async () => {
-    const url = location.href.split("#")[0];
-    const data = { title: S.title || "Mahj night", text: "Here's our mahj night: tables and scores, live.", url };
-    if (navigator.share){ try{ await navigator.share(data) }catch{} return; }
+  const nightUrl = () => `${location.origin}${location.pathname}?night=${night}`;
+  async function sendLink(url, title, text){
+    if (navigator.share){ try{ await navigator.share({ title, text, url }) }catch{} return; }
+    copyLink(url);
+  }
+  async function copyLink(url){
     try{ await navigator.clipboard.writeText(url); toast("Link copied. Paste it in the group chat."); }
     catch{ prompt("Copy this link", url); }
+  }
+  function qrSvg(url){
+    if (!window.qrcode) return "";
+    const q = window.qrcode(0, "M"); q.addData(url); q.make();
+    return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+  }
+  $("#shareBtn").onclick = () => {
+    const url = nightUrl(), title = S.title || "Mahj night";
+    const qr = qrSvg(url);
+    sheet.innerHTML = `<h3>Invite players</h3><p class="lead">Anyone with the link can see tables and record games. No sign-up.</p>
+      ${qr ? `<div class="qr">${qr}</div><p class="qrnote">Scan with a phone camera</p>` : ""}
+      <div class="code"><small>Night code</small><b>${esc(night)}</b></div>
+      <div class="actions"><button class="btn btn-ghost" type="button" data-sh="copy">Copy link</button>
+        <button class="btn btn-crak grow" type="button" data-sh="send">Send link</button></div>
+      <div class="actions"><button class="btn btn-ghost grow" type="button" data-sh="close">Done</button></div>`;
+    sheet.onclick = e => {
+      const b = e.target.closest("[data-sh]"); if (!b) return;
+      if (b.dataset.sh === "copy") copyLink(url);
+      if (b.dataset.sh === "send") sendLink(url, title, `Join ${title}: tables and scores, live.`);
+      if (b.dataset.sh === "close") dlg.close();
+    };
+    dlg.showModal();
   };
 
   // ---------- new version alert ----------
@@ -801,9 +838,17 @@ footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;paddi
       </div>
       <div class="card"><h3>Host a night</h3><p>You'll get a link to share with the group.</p>
         <button class="btn btn-crak" type="button" id="startBtn" style="width:100%">Start a mahj night</button></div>
+      <div class="card"><h3>Share the app</h3><p>Send Mahj Night to another host.</p>
+        <button class="btn btn-ghost" type="button" id="appShare" style="width:100%">Share Mahj Night</button></div>
       <div class="card"><h3>Join with a code</h3>
         <form class="addrow" id="joinForm"><input class="field" id="joinIn" placeholder="Night code" maxlength="8" autocapitalize="characters"><button class="btn btn-dot" type="submit">Join</button></form></div>
       ${list.length ? `<div class="card"><h3>Your nights</h3><div class="recent">${list.map(r => `<a href="?night=${esc(r.code)}">${esc(r.title || "Mahj night")}<small>${new Date(r.at).toLocaleDateString([], { month:"short", day:"numeric" })}</small></a>`).join("")}</div></div>` : ""}`;
+    $("#appShare").onclick = async () => {
+      const url = location.origin + location.pathname;
+      const data = { title:"Mahj Night", text:"Run your mahjong night: tables, scores and seat moves.", url };
+      if (navigator.share){ try{ await navigator.share(data) }catch{} return; }
+      try{ await navigator.clipboard.writeText(url); toast("Link copied."); }catch{ prompt("Copy this link", url); }
+    };
     $("#startBtn").onclick = () => { location.href = `?night=${newCode()}`; };
     $("#joinForm").onsubmit = e => { e.preventDefault(); const c = $("#joinIn").value.trim().toUpperCase(); if (c) location.href = `?night=${encodeURIComponent(c)}`; };
     $("#ver").textContent = `Mahj Night, version ${VERSION}`;
