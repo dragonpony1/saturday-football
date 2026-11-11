@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mahj Night</title>
+<meta name="theme-color" content="#0F3D33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mahj Night">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --felt:#0F3D33; --felt-2:#145040; --felt-deep:#0A2C25; --rail:#06201A;
+  --ivory:#F6F0E1; --bone:#E4D9BF; --ink:#22201B;
+  --crak:#E0453A; --dot:#2F7BD6; --bam:#3DB36B; --gold:#F2B630; --plum:#A66CE8; --teal:#1FB5B0;
+  --text:#EAF3EE; --muted:#9FC2B4;
+  --display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito",ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+html{background:var(--felt-deep)}
+body{
+  background:radial-gradient(120% 70% at 50% -10%,var(--felt-2),var(--felt) 45%,var(--felt-deep));
+  color:var(--text); font:500 16px/1.45 var(--body);
+  min-height:100vh; padding-bottom:calc(84px + env(safe-area-inset-bottom));
+  -webkit-tap-highlight-color:transparent;
+}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+.hidden{display:none!important}
+
+/* header */
+header{padding:calc(14px + env(safe-area-inset-top)) 0 6px}
+.top{display:flex;align-items:center;gap:10px}
+.brand{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.brand img{width:34px;height:34px;border-radius:9px}
+.brand h1{font:400 26px/1 var(--display);margin:0;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{border:0;border-radius:999px;padding:8px 14px;font-weight:800;background:var(--ivory);color:var(--ink);box-shadow:0 3px 0 var(--bone)}
+.pill:active{transform:translateY(2px);box-shadow:0 1px 0 var(--bone)}
+.sub{display:flex;align-items:center;gap:10px;margin-top:6px;color:var(--muted);font-size:14px;font-weight:700}
+.status{display:inline-flex;align-items:center;gap:6px}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.status.live i{background:var(--bam);box-shadow:0 0 0 4px rgba(61,179,107,.25)}
+.status.local i{background:var(--gold)}
+
+/* banners */
+.banner{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:10px 12px;border-radius:14px;font-weight:700;font-size:15px}
+.banner span{flex:1}
+.banner button{border:0;border-radius:999px;padding:6px 12px;font-weight:900}
+.b-update{background:var(--gold);color:var(--ink)} .b-update button{background:var(--ink);color:var(--gold)}
+.b-activity{background:var(--dot);color:#fff} .b-activity button{background:#fff;color:var(--dot)}
+.b-activity .x{background:transparent;color:#fff;padding:6px}
+.b-local{background:rgba(242,182,48,.15);color:var(--gold);border:1px solid rgba(242,182,48,.4)}
+
+/* section heads */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:20px 0 10px}
+.head h2{font:400 30px/1 var(--display);margin:0}
+.head p{margin:4px 0 0;color:var(--muted);font-size:14px;font-weight:700}
+.btn{border:0;border-radius:14px;padding:12px 16px;font-weight:900;font-size:16px;white-space:nowrap}
+.btn-crak{background:var(--crak);color:#fff;box-shadow:0 4px 0 #9E2A22}
+.btn-dot{background:var(--dot);color:#fff;box-shadow:0 4px 0 #1C4E8C}
+.btn-bam{background:var(--bam);color:#06281A;box-shadow:0 4px 0 #237043}
+.btn-ghost{background:rgba(255,255,255,.08);color:var(--text);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18)}
+.btn:active{transform:translateY(3px);box-shadow:none}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.grow{flex:1}
+
+/* the table card */
+.tables{display:grid;gap:18px}
+.tcard{background:rgba(0,0,0,.18);border-radius:26px;padding:14px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
+.felt{position:relative;aspect-ratio:1/0.82;margin:4px 6px 10px;border-radius:30px;
+  background:radial-gradient(circle at 50% 45%,#1C7A5F,#12573F 70%);
+  box-shadow:inset 0 0 0 9px var(--rail),inset 0 0 0 11px #2A6B57,0 10px 24px rgba(0,0,0,.35)}
+.tnum{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:66px;height:84px;border-radius:12px;background:var(--ivory);color:var(--ink);
+  display:grid;place-items:center;text-align:center;box-shadow:0 5px 0 var(--tc,var(--crak))}
+.tnum b{font:400 44px/1 var(--display);color:var(--tc,var(--crak))}
+.tnum small{display:block;font-size:11px;font-weight:900;margin-top:-6px;color:#6b6250}
+.seat{position:absolute;transform:translate(-50%,-50%);border:0;min-width:92px;max-width:46%;padding:7px 10px 6px;border-radius:11px;background:var(--ivory);color:var(--ink);
+  box-shadow:0 4px 0 var(--pc);text-align:center;line-height:1.1;transition:transform .15s}
+.seat .n{display:block;font-weight:900;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .p{display:block;font-size:12px;font-weight:800;color:#6b6250}
+.seat .p.pos{color:#1E7D45}.seat .p.neg{color:#B3322A}
+.seat.sel{transform:translate(-50%,-50%) scale(1.08);box-shadow:0 0 0 3px var(--gold),0 4px 0 var(--pc)}
+.tfoot{display:flex;align-items:center;gap:10px}
+.tfoot .meta{flex:1;color:var(--muted);font-size:14px;font-weight:700}
+.swaphint{position:sticky;top:8px;z-index:5;background:var(--gold);color:var(--ink);font-weight:800;border-radius:14px;padding:10px 12px;margin:10px 0;display:flex;gap:8px;align-items:center}
+.swaphint span{flex:1}
+.swaphint button{border:0;background:var(--ink);color:var(--gold);border-radius:999px;padding:6px 12px;font-weight:900}
+
+/* standings */
+.board{display:grid;gap:10px}
+.stand{display:flex;align-items:center;gap:12px;background:var(--ivory);color:var(--ink);border-radius:16px;padding:10px 14px;box-shadow:0 4px 0 var(--pc)}
+.stand .rk{font:400 28px/1 var(--display);width:34px;text-align:center;color:var(--pc)}
+.stand .who{flex:1;min-width:0}
+.stand .who b{display:block;font-size:17px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stand .who small{color:#6b6250;font-weight:700;font-size:13px}
+.stand .pts{font:400 30px/1 var(--display)}
+.stand .pts.neg{color:#B3322A}.stand .pts.pos{color:#1E7D45}
+.stand.lead{background:linear-gradient(180deg,#FFF6D6,var(--ivory))}
+.crown{font-size:12px;font-weight:900;background:var(--gold);color:var(--ink);border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:2px}
+
+/* games log */
+.glist{display:grid;gap:10px}
+.game{background:rgba(0,0,0,.2);border-radius:16px;padding:12px 14px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
+.game .l1{display:flex;gap:8px;align-items:baseline}
+.game .l1 b{font-size:17px;font-weight:900;flex:1}
+.game .l1 small{color:var(--muted);font-weight:700;font-size:13px;white-space:nowrap}
+.game .how{color:var(--muted);font-weight:700;font-size:14px;margin:2px 0 8px}
+.deltas{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;gap:6px;align-items:center;border-radius:9px;background:var(--ivory);color:var(--ink);font-weight:800;font-size:13px;padding:3px 8px;box-shadow:0 2px 0 var(--pc)}
+.chip .pos{color:#1E7D45}.chip .neg{color:#B3322A}
+.del{border:0;background:transparent;color:var(--muted);font-weight:800;font-size:13px;padding:4px 0;margin-top:8px}
+.del.armed{color:var(--crak)}
+.rlabel{font:400 20px/1 var(--display);margin:18px 0 8px;color:var(--muted)}
+
+/* players */
+.addrow{display:flex;gap:8px}
+.field{flex:1;min-width:0;border:0;border-radius:14px;padding:12px 14px;background:var(--ivory);color:var(--ink);font-weight:700;font-size:16px}
+.field::placeholder{color:#8f8670}
+.plist{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.ptile{display:inline-flex;align-items:center;gap:6px;background:var(--ivory);color:var(--ink);border-radius:11px;padding:8px 6px 8px 12px;font-weight:900;box-shadow:0 4px 0 var(--pc)}
+.ptile button{border:0;background:transparent;color:#8f8670;font-weight:900;padding:0 6px;font-size:18px;line-height:1}
+.ptile.out{opacity:.5;box-shadow:0 4px 0 #8f8670}
+.ptile.out button{font-size:13px;color:var(--ink)}
+.card{background:rgba(0,0,0,.18);border-radius:20px;padding:16px;margin-top:16px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
+.card h3{font:400 22px/1 var(--display);margin:0 0 10px}
+.card p{margin:0 0 12px;color:var(--muted);font-weight:700;font-size:14px}
+.empty{text-align:center;padding:30px 10px;color:var(--muted);font-weight:700}
+.empty .big{font:400 26px/1.1 var(--display);color:var(--text);margin-bottom:8px}
+
+/* tab bar */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(6,32,26,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:6px;border-top:1px solid rgba(255,255,255,.08)}
+nav.tabs button{flex:1;max-width:130px;border:0;background:transparent;border-radius:14px;padding:7px 4px;font-weight:800;font-size:13px;color:var(--muted);display:grid;justify-items:center;gap:3px}
+nav.tabs button .ic{width:26px;height:20px;border-radius:5px;background:rgba(255,255,255,.1);display:grid;place-items:center}
+nav.tabs button .ic i{width:8px;height:8px;border-radius:50%;background:currentColor}
+nav.tabs button[aria-selected=true]{color:var(--text)}
+nav.tabs button[aria-selected=true] .ic{background:var(--ivory)}
+nav.tabs button[data-tab=tables][aria-selected=true] .ic i{background:var(--crak)}
+nav.tabs button[data-tab=standings][aria-selected=true] .ic i{background:var(--gold)}
+nav.tabs button[data-tab=games][aria-selected=true] .ic i{background:var(--dot)}
+nav.tabs button[data-tab=players][aria-selected=true] .ic i{background:var(--bam)}
+
+/* sheets */
+dialog{border:0;padding:0;background:transparent;color:var(--text);max-width:560px;width:100%;margin:auto auto 0;max-height:92vh}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+.sheet{background:var(--felt-deep);border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -1px 0 rgba(255,255,255,.1)}
+.sheet h3{font:400 26px/1 var(--display);margin:0 0 4px}
+.sheet .lead{color:var(--muted);font-weight:700;font-size:14px;margin:0 0 14px}
+.q{font-weight:900;margin:14px 0 8px;font-size:15px}
+.picks{display:flex;flex-wrap:wrap;gap:8px}
+.pick{border:0;border-radius:11px;padding:9px 12px;font-weight:900;background:rgba(255,255,255,.1);color:var(--text);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.15)}
+.pick.on{background:var(--ivory);color:var(--ink);box-shadow:0 3px 0 var(--pc,var(--gold))}
+.stepper{display:flex;align-items:center;gap:8px;margin-top:8px}
+.stepper button{width:44px;height:44px;border-radius:12px;border:0;background:rgba(255,255,255,.1);font-weight:900;font-size:20px}
+.stepper output{font:400 32px/1 var(--display);min-width:60px;text-align:center}
+.preview{margin-top:14px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.06);display:flex;flex-wrap:wrap;gap:6px}
+.sheet .actions{display:flex;gap:10px;margin-top:18px}
+.toggle{display:flex;align-items:center;gap:10px;margin-top:14px;font-weight:800}
+.toggle input{width:22px;height:22px;accent-color:var(--gold)}
+.opt{display:block;width:100%;text-align:left;border:0;border-radius:16px;padding:14px;margin-top:10px;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12)}
+.opt b{display:block;font-size:17px;font-weight:900}
+.opt span{color:var(--muted);font-weight:700;font-size:14px}
+
+/* home */
+.hero{text-align:center;padding:40px 0 10px}
+.hero .tiles{display:flex;justify-content:center;gap:10px;margin-bottom:22px}
+.hero .tile{width:58px;height:78px;border-radius:12px;background:var(--ivory);display:grid;place-items:center;font:400 30px/1 var(--display)}
+.hero .tile:nth-child(1){box-shadow:0 6px 0 var(--crak);color:var(--crak);transform:rotate(-8deg)}
+.hero .tile:nth-child(2){box-shadow:0 6px 0 var(--dot);color:var(--dot);transform:translateY(-8px)}
+.hero .tile:nth-child(3){box-shadow:0 6px 0 var(--bam);color:var(--bam);transform:rotate(7deg)}
+.hero .tile:nth-child(4){box-shadow:0 6px 0 var(--gold);color:#C48F10;transform:rotate(-3deg) translateY(4px)}
+.hero h1{font:400 52px/1 var(--display);margin:0}
+.hero p{color:var(--muted);font-weight:700;max-width:30ch;margin:10px auto 0}
+.recent{display:grid;gap:8px;margin-top:10px}
+.recent a{display:flex;justify-content:space-between;gap:10px;text-decoration:none;color:var(--ink);background:var(--ivory);padding:12px 14px;border-radius:14px;font-weight:900;box-shadow:0 4px 0 var(--dot)}
+.recent a small{color:#6b6250;font-weight:700}
+
+footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;padding:30px 0 10px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ivory);color:var(--ink);font-weight:800;padding:10px 16px;border-radius:999px;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:90vw}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.6)}70%{transform:translate(-50%,-50%) scale(1.08)}100%{transform:translate(-50%,-50%) scale(1)}}
+.seat.moved{animation:pop .45s ease-out}
+@media (prefers-reduced-motion:reduce){.seat.moved{animation:none}.seat{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header id="hdr" class="hidden">
+    <div class="top">
+      <div class="brand"><img src="icon.svg" alt=""><h1 id="title">Mahj night</h1></div>
+      <button class="pill" id="shareBtn" type="button">Share</button>
+    </div>
+    <div class="sub"><span class="status" id="status"><i></i><span>Connecting</span></span><span id="roundLbl"></span></div>
+  </header>
+  <div id="banners">
+    <div class="banner b-update hidden" id="newVer"><span>A new version is ready.</span><button type="button" id="reloadBtn">Refresh</button></div>
+    <div class="banner b-activity hidden" id="activity"><span id="activityTxt"></span><button type="button" id="activityView">View</button><button type="button" class="x" id="activityX" aria-label="Dismiss">✕</button></div>
+    <div class="banner b-local hidden" id="localBanner"><span>Saving on this phone only. Others won't see changes until the shared database is set up.</span></div>
+  </div>
+  <main id="main"></main>
+  <footer id="ver"></footer>
+</div>
+
+<nav class="tabs hidden" id="tabs" role="tablist">
+  <button type="button" role="tab" data-tab="tables" aria-selected="true"><span class="ic"><i></i></span>Tables</button>
+  <button type="button" role="tab" data-tab="standings" aria-selected="false"><span class="ic"><i></i></span>Standings</button>
+  <button type="button" role="tab" data-tab="games" aria-selected="false"><span class="ic"><i></i></span>Games</button>
+  <button type="button" role="tab" data-tab="players" aria-selected="false"><span class="ic"><i></i></span>Players</button>
+</nav>
+
+<dialog id="dlg"><div class="sheet" id="sheet"></div></dialog>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(() => {
+  // Bump VERSION here AND in version.json on every push.
+  const VERSION = "1.0";
+
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  const uid = () => (crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx".replace(/x/g, () => (Math.random()*16|0).toString(16)));
+  const store = {
+    get(k, d=null){ try{ const v = localStorage.getItem(k); return v == null ? d : v }catch{ return d } },
+    set(k, v){ try{ localStorage.setItem(k, v) }catch{} }
+  };
+  const COLORS = ["var(--crak)","var(--dot)","var(--bam)","var(--gold)","var(--plum)","var(--teal)"];
+  const TABLE_COLORS = ["var(--crak)","var(--dot)","var(--bam)","#C48F10","var(--plum)","var(--teal)"];
+  const fmt = n => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n);
+  const cls = n => n > 0 ? "pos" : n < 0 ? "neg" : "";
+
+  let toastT;
+  function toast(msg){
+    document.querySelector(".toast")?.remove();
+    const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+    document.body.appendChild(t); clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 2600);
+  }
+
+  $("#ver").textContent = `Mahj Night, version ${VERSION}`;
+
+  // ---------- night code ----------
+  const params = new URLSearchParams(location.search);
+  const night = (params.get("night") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+  const recent = () => { try{ return JSON.parse(store.get("mahj-recent", "[]")) }catch{ return [] } };
+  function remember(title){
+    const list = recent().filter(r => r.code !== night);
+    list.unshift({ code: night, title, at: Date.now() });
+    store.set("mahj-recent", JSON.stringify(list.slice(0, 8)));
+  }
+  const newCode = () => Array.from({length:5}, () => "ABCDEFGHJKMNPQRSTUVWXYZ23456789"[Math.random()*31|0]).join("");
+
+  if (!night){ renderHome(); return; }
+
+  // ---------- data ----------
+  const cfg = window.MAHJ_CONFIG || {};
+  const canLive = !!(cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase);
+  const db = canLive ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey) : null;
+  let live = false;
+  let events = [];
+  const seen = new Set();
+  const localKey = `mahj-ev-${night}`;
+  let me = store.get("mahj-name", "");
+  let tab = store.get("mahj-tab", "tables");
+  let S = derive();
+  let swapSel = null;     // pid selected for a seat swap
+  let lastMoved = new Set();
+  let armedDel = null;
+
+  function saveLocal(){ store.set(localKey, JSON.stringify(events)); }
+  function ingest(ev){
+    if (seen.has(ev.id)) return false;
+    seen.add(ev.id); events.push(ev); return true;
+  }
+  function setStatus(kind){
+    const s = $("#status"); s.className = "status " + kind;
+    s.querySelector("span").textContent = kind === "live" ? "Live" : kind === "local" ? "This phone only" : "Connecting";
+    $("#localBanner").classList.toggle("hidden", kind !== "local");
+  }
+
+  async function load(){
+    try{ JSON.parse(store.get(localKey, "[]")).forEach(ingest); }catch{}
+    S = derive(); render();
+    if (!db){ setStatus("local"); return; }
+    try{
+      const { data, error } = await db.from("mahj_events").select("*").eq("night", night).order("created_at");
+      if (error) throw error;
+      const local = events.slice();
+      events = []; seen.clear();
+      data.forEach(ingest);
+      // anything made offline that never reached the server gets sent now
+      for (const ev of local) if (!seen.has(ev.id)){ ingest(ev); db.from("mahj_events").insert(ev).then(()=>{}); }
+      live = true; setStatus("live"); saveLocal();
+      S = derive(); render();
+      db.channel("mahj-" + night)
+        .on("postgres_changes", { event:"INSERT", schema:"public", table:"mahj_events", filter:`night=eq.${night}` }, p => {
+          const ev = p.new;
+          if (!ingest(ev)) return;
+          saveLocal(); S = derive(); render();
+          if (ev.who && ev.who !== me) showActivity(ev);
+        }).subscribe();
+    }catch(e){
+      console.warn(e); setStatus("local");
+    }
+  }
+
+  async function add(type, data){
+    const ev = { id: uid(), night, type, data, who: me || null, created_at: new Date().toISOString() };
+    ingest(ev); saveLocal(); S = derive(); render();
+    if (live){
+      const { error } = await db.from("mahj_events").insert(ev);
+      if (error){ console.warn(error); toast("Couldn't reach the shared list. Saved on this phone."); }
+    }
+    return ev;
+  }
+
+  // ---------- state from events ----------
+  function derive(){
+    const s = { title:"", players:{}, order:[], rounds:[], games:[] };
+    const dead = new Set();
+    const sorted = [...events].sort((a,b) => a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0);
+    for (const e of sorted){
+      const d = e.data || {};
+      if (e.type === "title") s.title = d.title || "";
+      else if (e.type === "player"){
+        const p = s.players[d.pid];
+        if (p){ p.out = false; if (d.name) p.name = d.name; }
+        else { s.players[d.pid] = { id:d.pid, name:d.name, color: COLORS[s.order.length % COLORS.length], out:false }; s.order.push(d.pid); }
+      }
+      else if (e.type === "player_out"){ if (s.players[d.pid]) s.players[d.pid].out = true; }
+      else if (e.type === "round") s.rounds.push({ id:e.id, n:s.rounds.length + 1, tables:d.tables, mode:d.mode });
+      else if (e.type === "seats"){ const r = s.rounds.find(r => r.id === d.round); if (r) r.tables = d.tables; }
+      else if (e.type === "game") s.games.push({ ...d, id:e.id, who:e.who, at:e.created_at });
+      else if (e.type === "game_del") dead.add(d.gid);
+    }
+    s.games = s.games.filter(g => !dead.has(g.id));
+    s.cur = s.rounds[s.rounds.length - 1] || null;
+    // totals
+    s.tot = {}; s.wins = {}; s.played = {}; s.roundPts = {};
+    s.order.forEach(id => { s.tot[id] = 0; s.wins[id] = 0; s.played[id] = 0; });
+    for (const g of s.games){
+      const pay = payouts(g);
+      for (const [pid, v] of Object.entries(pay)){
+        s.tot[pid] = (s.tot[pid] || 0) + v;
+        s.played[pid] = (s.played[pid] || 0) + 1;
+        if (s.cur && g.round === s.cur.id) s.roundPts[pid] = (s.roundPts[pid] || 0) + v;
+      }
+      if (g.winner) s.wins[g.winner] = (s.wins[g.winner] || 0) + 1;
+    }
+    return s;
+  }
+
+  // American mahjong payout: discarder pays double, others pay single.
+  // Self-picked: everyone pays double. Jokerless doubles it all.
+  function payouts(g){
+    const out = {};
+    (g.players || []).forEach(p => out[p] = 0);
+    if (!g.winner) return out;
+    const v = (+g.value || 0) * (g.jokerless ? 2 : 1);
+    for (const p of g.players){
+      if (p === g.winner) continue;
+      const pay = g.how === "self" ? 2*v : (p === g.from ? 2*v : v);
+      out[p] -= pay; out[g.winner] += pay;
+    }
+    return out;
+  }
+
+  const name = pid => S.players[pid]?.name || "?";
+  const color = pid => S.players[pid]?.color || "var(--bone)";
+  const active = () => S.order.filter(id => !S.players[id].out);
+
+  // ---------- seating ----------
+  function tableSizes(n){
+    if (n <= 0) return [];
+    let t = Math.max(1, Math.round(n / 4));
+    while (n / t > 5) t++;
+    while (t > 1 && n / t < 3) t--;
+    const base = Math.floor(n / t), extra = n % t;
+    return Array.from({length:t}, (_, i) => base + (i < extra ? 1 : 0));
+  }
+  function chunk(list){
+    const out = []; let i = 0;
+    for (const sz of tableSizes(list.length)){ out.push(list.slice(i, i + sz)); i += sz; }
+    return out;
+  }
+  function pairCounts(){
+    const c = {};
+    for (const r of S.rounds) for (const t of r.tables) for (const a of t) for (const b of t) if (a < b) c[a+"|"+b] = (c[a+"|"+b] || 0) + 1;
+    return c;
+  }
+  function shuffled(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.random()*(i+1)|0; [a[i],a[j]] = [a[j],a[i]]; } return a; }
+  function seatShuffle(){
+    const ids = active(), pc = pairCounts();
+    let best = null, bestScore = Infinity;
+    for (let k = 0; k < 400; k++){
+      const tables = chunk(shuffled(ids));
+      let sc = 0;
+      for (const t of tables) for (const a of t) for (const b of t) if (a < b) sc += (pc[a+"|"+b] || 0) ** 2;
+      if (sc < bestScore){ best = tables; bestScore = sc; if (sc === 0) break; }
+    }
+    return best;
+  }
+  function seatByStandings(){
+    const ids = active().slice().sort((a,b) => (S.tot[b]||0) - (S.tot[a]||0) || (S.wins[b]||0) - (S.wins[a]||0));
+    return chunk(ids);
+  }
+  function seatSwiss(){
+    // winners of each table move up a table, lowest scorer moves down
+    const cur = S.cur.tables.map(t => t.filter(id => S.players[id] && !S.players[id].out));
+    const pts = id => S.roundPts[id] || 0;
+    const sorted = cur.map(t => t.slice().sort((a,b) => pts(b) - pts(a)));
+    const next = sorted.map(t => t.slice());
+    for (let i = 1; i < sorted.length; i++){
+      const up = sorted[i][0], down = sorted[i-1][sorted[i-1].length - 1];
+      if (up == null || down == null) continue;
+      next[i][next[i].indexOf(up)] = down;
+      next[i-1][next[i-1].indexOf(down)] = up;
+    }
+    // anyone new or unseated goes to the smallest table
+    const seated = new Set(next.flat());
+    for (const id of active()) if (!seated.has(id)) smallest(next).push(id);
+    return next.filter(t => t.length);
+  }
+  const smallest = tables => tables.reduce((a, b) => b.length < a.length ? b : a, tables[0]);
+
+  async function startRound(mode){
+    const before = new Map();
+    S.cur?.tables.forEach((t, i) => t.forEach(id => before.set(id, i)));
+    const tables = mode === "standings" ? seatByStandings() : mode === "swiss" ? seatSwiss() : seatShuffle();
+    lastMoved = new Set();
+    tables.forEach((t, i) => t.forEach(id => { if (before.get(id) !== i) lastMoved.add(id); }));
+    await add("round", { tables, mode });
+    tab = "tables"; render();
+    window.scrollTo({ top:0, behavior:"smooth" });
+  }
+
+  // ---------- activity alert ----------
+  let actTarget = null;
+  function showActivity(ev){
+    const d = ev.data || {};
+    let msg = null; actTarget = "tables";
+    if (ev.type === "game"){
+      const t = S.cur?.tables && d.table != null ? ` at table ${d.table + 1}` : "";
+      msg = d.winner ? `${ev.who} recorded a mahj for ${name(d.winner)}${t}.` : `${ev.who} recorded a wall game${t}.`;
+      actTarget = "games";
+    }
+    else if (ev.type === "round") msg = `${ev.who} moved tables. Round ${S.rounds.length} is seated.`;
+    else if (ev.type === "seats") msg = `${ev.who} swapped seats.`;
+    else if (ev.type === "player"){ msg = `${ev.who} added ${d.name}.`; actTarget = "players"; }
+    else if (ev.type === "game_del"){ msg = `${ev.who} deleted a game.`; actTarget = "games"; }
+    if (!msg) return;
+    $("#activityTxt").textContent = msg;
+    $("#activity").classList.remove("hidden");
+  }
+  $("#activityView").onclick = () => { $("#activity").classList.add("hidden"); tab = actTarget; render(); window.scrollTo({top:0,behavior:"smooth"}); };
+  $("#activityX").onclick = () => $("#activity").classList.add("hidden");
+
+  // ---------- render ----------
+  function render(){
+    $("#hdr").classList.remove("hidden");
+    $("#tabs").classList.remove("hidden");
+    const title = S.title || "Mahj night";
+    $("#title").textContent = title;
+    document.title = `${title} | Mahj Night`;
+    $("#roundLbl").textContent = S.cur ? `Round ${S.cur.n}` : "Not seated yet";
+    remember(title);
+    document.querySelectorAll("nav.tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === tab));
+    store.set("mahj-tab", tab);
+    const m = $("#main");
+    if (tab === "tables") m.innerHTML = viewTables();
+    else if (tab === "standings") m.innerHTML = viewStandings();
+    else if (tab === "games") m.innerHTML = viewGames();
+    else m.innerHTML = viewPlayers();
+  }
+
+  function seatPos(i, n){
+    // spread seats around the table, first seat at the bottom
+    const a = Math.PI/2 + (2*Math.PI*i)/n;
+    return { x: 50 + Math.cos(a)*38, y: 50 + Math.sin(a)*38 };
+  }
+
+  function viewTables(){
+    if (!S.cur){
+      const n = active().length;
+      return `<div class="head"><div><h2>Tables</h2><p>${n ? `${n} player${n>1?"s":""} ready` : "Add players to get started"}</p></div></div>
+        <div class="card"><h3>${n >= 3 ? "Seat everyone" : "Who's playing?"}</h3>
+          <p>${n >= 3 ? `That's ${tableSizes(n).length} table${tableSizes(n).length>1?"s":""} of ${tableSizes(n).join(", ")}. Seats are shuffled for round 1.` : "You need at least 3 players. Add names on the Players tab."}</p>
+          ${n >= 3 ? `<button class="btn btn-crak" type="button" data-act="seat-first">Seat round 1</button>` : `<button class="btn btn-bam" type="button" data-tab-go="players">Add players</button>`}
+        </div>`;
+    }
+    const gamesHere = (ti) => S.games.filter(g => g.round === S.cur.id && g.table === ti).length;
+    return `<div class="head"><div><h2>Round ${S.cur.n}</h2><p>Points are this round. Tap two players to swap.</p></div>
+        <button class="btn btn-dot" type="button" data-act="move">Move tables</button></div>
+      ${swapSel ? `<div class="swaphint"><span>Now tap who ${esc(name(swapSel))} swaps with</span><button type="button" data-act="swap-cancel">Cancel</button></div>` : ""}
+      <div class="tables">
+      ${S.cur.tables.map((t, ti) => {
+        const tc = TABLE_COLORS[ti % TABLE_COLORS.length];
+        const gh = gamesHere(ti);
+        return `<section class="tcard" id="table-${ti}">
+          <div class="felt">
+            <div class="tnum" style="--tc:${tc}"><div><b>${ti + 1}</b><small>Table</small></div></div>
+            ${t.map((id, i) => { const p = seatPos(i, t.length); const rp = S.roundPts[id] || 0;
+              return `<button type="button" class="seat ${swapSel === id ? "sel" : ""} ${lastMoved.has(id) ? "moved" : ""}" data-seat="${id}" style="left:${p.x}%;top:${p.y}%;--pc:${color(id)}">
+                <span class="n">${esc(name(id))}</span><span class="p ${cls(rp)}">${rp ? fmt(rp) : "0"}</span></button>`; }).join("")}
+          </div>
+          <div class="tfoot"><span class="meta">${gh ? `${gh} game${gh>1?"s":""} this round` : "No games yet"}</span>
+            <button class="btn btn-crak" type="button" data-act="record" data-table="${ti}">Record a game</button></div>
+        </section>`;
+      }).join("")}
+      </div>`;
+  }
+
+  function viewStandings(){
+    const ids = S.order.slice().sort((a,b) => (S.tot[b]||0) - (S.tot[a]||0) || (S.wins[b]||0) - (S.wins[a]||0));
+    if (!ids.length) return `<div class="head"><div><h2>Standings</h2></div></div><div class="empty"><div class="big">No players yet</div>Add players to start keeping score.</div>`;
+    const lead = S.games.length ? ids[0] : null;
+    let rank = 0, prev = null;
+    return `<div class="head"><div><h2>Standings</h2><p>${S.games.length} game${S.games.length===1?"":"s"} played tonight</p></div></div>
+      <div class="board">${ids.map((id, i) => {
+        const t = S.tot[id] || 0;
+        if (t !== prev){ rank = i + 1; prev = t; }
+        const out = S.players[id].out;
+        return `<div class="stand ${id === lead ? "lead" : ""}" style="--pc:${color(id)};${out?"opacity:.55":""}">
+          <span class="rk">${rank}</span>
+          <span class="who"><b>${esc(name(id))}${id === lead ? `<span class="crown">Leading</span>` : ""}</b>
+            <small>${S.wins[id]||0} mahj${(S.wins[id]||0)===1?"":"s"} in ${S.played[id]||0} game${(S.played[id]||0)===1?"":"s"}${out?", left":""}</small></span>
+          <span class="pts ${cls(t)}">${fmt(t) || "0"}</span></div>`;
+      }).join("")}</div>`;
+  }
+
+  function viewGames(){
+    if (!S.games.length) return `<div class="head"><div><h2>Games</h2></div></div><div class="empty"><div class="big">No games yet</div>Tap Record a game on any table after someone calls mahj.</div>`;
+    let html = `<div class="head"><div><h2>Games</h2><p>Newest first</p></div></div>`;
+    for (const r of S.rounds.slice().reverse()){
+      const gs = S.games.filter(g => g.round === r.id).reverse();
+      if (!gs.length) continue;
+      html += `<div class="rlabel">Round ${r.n}</div><div class="glist">` + gs.map(g => {
+        const pay = payouts(g);
+        const how = !g.winner ? "Wall game, no score"
+          : `${g.how === "self" ? "Self-picked" : `Off ${esc(name(g.from))}'s discard`}, ${g.value} point hand${g.jokerless ? ", jokerless" : ""}`;
+        const time = new Date(g.at).toLocaleTimeString([], { hour:"numeric", minute:"2-digit" });
+        return `<div class="game">
+          <div class="l1"><b>${g.winner ? `${esc(name(g.winner))} called mahj` : "Wall game"}</b><small>Table ${g.table + 1}, ${time}</small></div>
+          <div class="how">${how}${g.sat ? `. ${esc(name(g.sat))} sat out` : ""}</div>
+          ${g.winner ? `<div class="deltas">${Object.entries(pay).sort((a,b)=>b[1]-a[1]).map(([pid, v]) => `<span class="chip" style="--pc:${color(pid)}">${esc(name(pid))} <span class="${cls(v)}">${fmt(v)}</span></span>`).join("")}</div>` : ""}
+          <button type="button" class="del ${armedDel === g.id ? "armed" : ""}" data-del="${g.id}">${armedDel === g.id ? "Tap again to delete" : "Delete game"}</button>
+        </div>`;
+      }).join("") + `</div>`;
+    }
+    return html;
+  }
+
+  function viewPlayers(){
+    const ins = S.order.filter(id => !S.players[id].out), outs = S.order.filter(id => S.players[id].out);
+    return `<div class="head"><div><h2>Players</h2><p>${ins.length} playing tonight</p></div></div>
+      <form class="addrow" id="addForm" autocomplete="off">
+        <input class="field" id="addName" placeholder="Name, or several with commas" maxlength="80" enterkeyhint="done">
+        <button class="btn btn-bam" type="submit">Add</button>
+      </form>
+      ${S.cur ? `<p style="color:var(--muted);font-weight:700;font-size:14px;margin:8px 2px 0">New players join the smallest table right away.</p>` : ""}
+      <div class="plist">${ins.map(id => `<span class="ptile" style="--pc:${color(id)}">${esc(name(id))}<button type="button" data-out="${id}" aria-label="Remove ${esc(name(id))}">×</button></span>`).join("")}</div>
+      ${outs.length ? `<div class="rlabel">Left early</div><div class="plist">${outs.map(id => `<span class="ptile out">${esc(name(id))}<button type="button" data-back="${id}">Bring back</button></span>`).join("")}</div>` : ""}
+      <div class="card"><h3>Night name</h3>
+        <form class="addrow" id="titleForm"><input class="field" id="titleIn" value="${esc(S.title)}" placeholder="Mahj night" maxlength="40"><button class="btn btn-ghost" type="submit">Save</button></form></div>
+      <div class="card"><h3>You</h3><p>Shown when you record games, so everyone knows who changed what.</p>
+        <form class="addrow" id="meForm"><input class="field" id="meIn" value="${esc(me)}" placeholder="Your name" maxlength="30"><button class="btn btn-ghost" type="submit">Save</button></form></div>
+      <div class="card"><h3>Start another night</h3><p>Night code ${esc(night)}. A new night gets its own link and a clean score sheet.</p>
+        <button class="btn btn-ghost" type="button" data-act="new-night">New night</button></div>`;
+  }
+
+  // ---------- events ----------
+  $("#tabs").addEventListener("click", e => {
+    const b = e.target.closest("[data-tab]"); if (!b) return;
+    tab = b.dataset.tab; swapSel = null; armedDel = null; render(); window.scrollTo({top:0});
+  });
+
+  $("#main").addEventListener("click", async e => {
+    const t = e.target;
+    const go = t.closest("[data-tab-go]"); if (go){ tab = go.dataset.tabGo; render(); return; }
+    const act = t.closest("[data-act]")?.dataset.act;
+    if (act === "seat-first") return startRound("shuffle");
+    if (act === "move") return openMove();
+    if (act === "record") return openRecord(+t.closest("[data-act]").dataset.table);
+    if (act === "swap-cancel"){ swapSel = null; render(); return; }
+    if (act === "new-night") return openNewNight();
+
+    const seat = t.closest("[data-seat]");
+    if (seat){
+      const id = seat.dataset.seat;
+      if (!swapSel){ swapSel = id; render(); return; }
+      if (swapSel === id){ swapSel = null; render(); return; }
+      const tables = S.cur.tables.map(x => x.slice());
+      const find = pid => { for (let i = 0; i < tables.length; i++){ const j = tables[i].indexOf(pid); if (j >= 0) return [i, j]; } };
+      const [a1, a2] = find(swapSel), [b1, b2] = find(id);
+      tables[a1][a2] = id; tables[b1][b2] = swapSel;
+      lastMoved = new Set([id, swapSel]);
+      const msg = a1 === b1 ? "Seats swapped." : `${name(swapSel)} to table ${b1+1}, ${name(id)} to table ${a1+1}.`;
+      swapSel = null;
+      await add("seats", { round: S.cur.id, tables });
+      toast(msg); return;
+    }
+    const del = t.closest("[data-del]");
+    if (del){
+      if (armedDel !== del.dataset.del){ armedDel = del.dataset.del; render(); return; }
+      armedDel = null; await add("game_del", { gid: del.dataset.del }); toast("Game deleted."); return;
+    }
+    const out = t.closest("[data-out]");
+    if (out){
+      const pid = out.dataset.out;
+      await add("player_out", { pid });
+      if (S.cur && S.cur.tables.some(x => x.includes(pid))){
+        const tables = S.cur.tables.map(x => x.filter(id => id !== pid)).filter(x => x.length);
+        await add("seats", { round: S.cur.id, tables });
+      }
+      toast(`${name(pid)} left the game.`); return;
+    }
+    const back = t.closest("[data-back]");
+    if (back){ const pid = back.dataset.back; await add("player", { pid, name: name(pid) }); await seatLate([pid]); return; }
+  });
+
+  async function seatLate(pids){
+    if (!S.cur) return;
+    const tables = S.cur.tables.map(x => x.slice());
+    for (const pid of pids){
+      if (tables.some(x => x.includes(pid))) continue;
+      const sm = smallest(tables);
+      if (!sm || sm.length >= 5) tables.push([pid]); else sm.push(pid);
+    }
+    lastMoved = new Set(pids);
+    await add("seats", { round: S.cur.id, tables });
+  }
+
+  $("#main").addEventListener("submit", async e => {
+    e.preventDefault();
+    if (e.target.id === "addForm"){
+      const raw = $("#addName").value;
+      const names = raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+      if (!names.length) return;
+      const taken = new Set(S.order.map(id => name(id).toLowerCase()));
+      const added = [];
+      for (const n of names){
+        if (taken.has(n.toLowerCase())){ toast(`${n} is already on the list.`); continue; }
+        taken.add(n.toLowerCase());
+        const pid = uid().slice(0, 8);
+        await add("player", { pid, name: n }); added.push(pid);
+      }
+      await seatLate(added);
+      if (added.length) toast(added.length > 1 ? `Added ${added.length} players.` : `Added ${name(added[0])}.`);
+      $("#addName")?.focus();
+    }
+    if (e.target.id === "titleForm"){ await add("title", { title: $("#titleIn").value.trim() }); toast("Night name saved."); }
+    if (e.target.id === "meForm"){ me = $("#meIn").value.trim(); store.set("mahj-name", me); toast("Saved."); }
+  });
+
+  // ---------- sheets ----------
+  const dlg = $("#dlg"), sheet = $("#sheet");
+  dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+
+  function openMove(){
+    sheet.innerHTML = `<h3>Move tables</h3><p class="lead">Starts round ${S.cur.n + 1}. Scores carry over.</p>
+      <button class="opt" type="button" data-mode="swiss"><b>Winners move up</b><span>Top scorer at each table moves up a table, lowest moves down.</span></button>
+      <button class="opt" type="button" data-mode="standings"><b>Seat by standings</b><span>The top ${tableSizes(active().length)[0] || 4} overall play at table 1, the next group at table 2, and so on.</span></button>
+      <button class="opt" type="button" data-mode="shuffle"><b>Shuffle</b><span>Mix everyone up, keeping people apart who've already played together.</span></button>
+      <div class="actions"><button class="btn btn-ghost grow" type="button" id="mvCancel">Cancel</button></div>`;
+    dlg.showModal();
+    $("#mvCancel").onclick = () => dlg.close();
+    sheet.querySelectorAll("[data-mode]").forEach(b => b.onclick = async () => { dlg.close(); await startRound(b.dataset.mode); toast(`Round ${S.cur.n} is seated.`); });
+  }
+
+  function openRecord(ti){
+    const seats = S.cur.tables[ti].slice();
+    const g = { winner: null, how: "discard", from: null, value: 25, jokerless: false, sat: null, wall: false };
+    const five = seats.length >= 5;
+    const draw = () => {
+      const players = seats.filter(id => id !== g.sat);
+      const others = players.filter(id => id !== g.winner);
+      const valid = g.wall || (g.winner && (g.how === "self" || g.from) && (!five || g.sat));
+      const pv = g.winner && !g.wall ? payouts({ ...g, players }) : null;
+      sheet.innerHTML = `<h3>Table ${ti + 1}</h3><p class="lead">Record a game for round ${S.cur.n}.</p>
+        ${five ? `<div class="q">Who sat out this hand?</div><div class="picks">${seats.map(id => `<button type="button" class="pick ${g.sat===id?"on":""}" style="--pc:${color(id)}" data-sat="${id}">${esc(name(id))}</button>`).join("")}</div>` : ""}
+        <div class="q">Who called mahj?</div>
+        <div class="picks">${players.map(id => `<button type="button" class="pick ${g.winner===id&&!g.wall?"on":""}" style="--pc:${color(id)}" data-win="${id}">${esc(name(id))}</button>`).join("")}
+          <button type="button" class="pick ${g.wall?"on":""}" data-wall="1">Wall game</button></div>
+        ${g.winner && !g.wall ? `
+          <div class="q">How?</div>
+          <div class="picks"><button type="button" class="pick ${g.how==="discard"?"on":""}" data-how="discard">Off a discard</button>
+            <button type="button" class="pick ${g.how==="self"?"on":""}" data-how="self">Self-picked</button></div>
+          ${g.how === "discard" ? `<div class="q">Whose discard?</div><div class="picks">${others.map(id => `<button type="button" class="pick ${g.from===id?"on":""}" style="--pc:${color(id)}" data-from="${id}">${esc(name(id))}</button>`).join("")}</div>` : ""}
+          <div class="q">Hand value</div>
+          <div class="picks">${[25,30,35,40,50,75].map(v => `<button type="button" class="pick ${g.value===v?"on":""}" data-val="${v}">${v}</button>`).join("")}</div>
+          <div class="stepper"><button type="button" data-step="-5" aria-label="Minus 5">−</button><output>${g.value}</output><button type="button" data-step="5" aria-label="Plus 5">+</button></div>
+          <label class="toggle"><input type="checkbox" id="jk" ${g.jokerless?"checked":""}> Jokerless (doubles it)</label>
+          ${pv ? `<div class="preview">${Object.entries(pv).sort((a,b)=>b[1]-a[1]).map(([pid,v]) => `<span class="chip" style="--pc:${color(pid)}">${esc(name(pid))} <span class="${cls(v)}">${fmt(v)}</span></span>`).join("")}</div>` : ""}
+        ` : ""}
+        <div class="actions"><button class="btn btn-ghost" type="button" data-cancel="1">Cancel</button>
+          <button class="btn btn-crak grow" type="button" data-save="1" ${valid ? "" : "disabled"}>Save game</button></div>`;
+    };
+    sheet.onclick = async e => {
+      const b = e.target.closest("button"); if (!b) return;
+      const d = b.dataset;
+      if (d.sat){ g.sat = d.sat; if (g.winner === d.sat) g.winner = null; if (g.from === d.sat) g.from = null; }
+      if (d.win){ g.winner = d.win; g.wall = false; if (g.from === d.win) g.from = null; }
+      if (d.wall){ g.wall = true; g.winner = null; }
+      if (d.how) g.how = d.how;
+      if (d.from) g.from = d.from;
+      if (d.val) g.value = +d.val;
+      if (d.step) g.value = Math.max(5, g.value + +d.step);
+      if (d.cancel){ dlg.close(); return; }
+      if (d.save){
+        const players = seats.filter(id => id !== g.sat);
+        dlg.close();
+        await add("game", { round: S.cur.id, table: ti, players, sat: g.sat,
+          winner: g.wall ? null : g.winner, how: g.how, from: g.how === "self" ? null : g.from, value: g.value, jokerless: g.jokerless });
+        toast(g.wall ? "Wall game saved." : `Mahj for ${name(g.winner)} saved.`);
+        return;
+      }
+      draw();
+    };
+    sheet.onchange = e => { if (e.target.id === "jk"){ g.jokerless = e.target.checked; draw(); } };
+    draw(); dlg.showModal();
+  }
+
+  function openNewNight(){
+    sheet.innerHTML = `<h3>New night</h3><p class="lead">Bring tonight's players along?</p>
+      <button class="opt" type="button" data-nn="same"><b>Same players</b><span>Fresh scores, same names.</span></button>
+      <button class="opt" type="button" data-nn="empty"><b>Start empty</b><span>No players yet.</span></button>
+      <div class="actions"><button class="btn btn-ghost grow" type="button" data-nn="cancel">Cancel</button></div>`;
+    dlg.showModal();
+    sheet.onclick = e => {
+      const b = e.target.closest("[data-nn]"); if (!b) return;
+      if (b.dataset.nn === "cancel"){ dlg.close(); return; }
+      const code = newCode();
+      if (b.dataset.nn === "same"){
+        const now = Date.now();
+        const evs = active().map((id, i) => ({ id: uid(), night: code, type:"player", data:{ pid:id, name:name(id) }, who: me || null, created_at: new Date(now + i).toISOString() }));
+        store.set(`mahj-ev-${code}`, JSON.stringify(evs)); // sent to the server when the new night loads
+      }
+      location.href = `?night=${code}`;
+    };
+  }
+
+  // ---------- name once ----------
+  function askName(){
+    if (me) return;
+    sheet.innerHTML = `<h3>What's your name?</h3><p class="lead">So everyone sees who recorded each game.</p>
+      <form class="addrow" id="nameForm"><input class="field" id="nameIn" placeholder="Your name" maxlength="30" autocomplete="given-name"><button class="btn btn-crak" type="submit">Save</button></form>
+      <label class="toggle"><input type="checkbox" id="alsoPlay" checked> I'm playing tonight too</label>`;
+    sheet.onclick = null;
+    dlg.showModal();
+    $("#nameForm").onsubmit = async e => {
+      e.preventDefault();
+      const n = $("#nameIn").value.trim(); if (!n) return;
+      me = n; store.set("mahj-name", me); dlg.close();
+      if ($("#alsoPlay").checked && !S.order.some(id => name(id).toLowerCase() === n.toLowerCase())){
+        const pid = uid().slice(0, 8); await add("player", { pid, name: n }); await seatLate([pid]);
+      }
+    };
+  }
+
+  // ---------- share ----------
+  $("#shareBtn").onclick = async () => {
+    const url = location.href.split("#")[0];
+    const data = { title: S.title || "Mahj night", text: "Here's our mahj night: tables and scores, live.", url };
+    if (navigator.share){ try{ await navigator.share(data) }catch{} return; }
+    try{ await navigator.clipboard.writeText(url); toast("Link copied. Paste it in the group chat."); }
+    catch{ prompt("Copy this link", url); }
+  };
+
+  // ---------- new version alert ----------
+  async function checkVersion(){
+    try{
+      const r = await fetch(`version.json?t=${Date.now()}`, { cache:"no-store" });
+      const { v } = await r.json();
+      if (v && v !== VERSION) $("#newVer").classList.remove("hidden");
+    }catch{}
+  }
+  $("#reloadBtn").onclick = () => location.reload();
+  setInterval(checkVersion, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkVersion(); });
+  setTimeout(checkVersion, 3000);
+
+  load();
+  setTimeout(askName, 400);
+
+  // ---------- home (no night code) ----------
+  function renderHome(){
+    const list = recent();
+    $("#main").innerHTML = `<div class="hero">
+        <div class="tiles" aria-hidden="true"><span class="tile">1</span><span class="tile">2</span><span class="tile">3</span><span class="tile">4</span></div>
+        <h1>Mahj Night</h1>
+        <p>Seat the tables, score every hand and move players between rounds. Everyone follows along on their phone.</p>
+      </div>
+      <div class="card"><h3>Host a night</h3><p>You'll get a link to share with the group.</p>
+        <button class="btn btn-crak" type="button" id="startBtn" style="width:100%">Start a mahj night</button></div>
+      <div class="card"><h3>Join with a code</h3>
+        <form class="addrow" id="joinForm"><input class="field" id="joinIn" placeholder="Night code" maxlength="8" autocapitalize="characters"><button class="btn btn-dot" type="submit">Join</button></form></div>
+      ${list.length ? `<div class="card"><h3>Your nights</h3><div class="recent">${list.map(r => `<a href="?night=${esc(r.code)}">${esc(r.title || "Mahj night")}<small>${new Date(r.at).toLocaleDateString([], { month:"short", day:"numeric" })}</small></a>`).join("")}</div></div>` : ""}`;
+    $("#startBtn").onclick = () => { location.href = `?night=${newCode()}`; };
+    $("#joinForm").onsubmit = e => { e.preventDefault(); const c = $("#joinIn").value.trim().toUpperCase(); if (c) location.href = `?night=${encodeURIComponent(c)}`; };
+    $("#ver").textContent = `Mahj Night, version ${VERSION}`;
+  }
+})();
+</script>
+</body>
+</html>
