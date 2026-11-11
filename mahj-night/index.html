@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mahj Night</title>
-<meta name="theme-color" content="#1B1230">
+<meta name="theme-color" content="#8656C4">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Mahj Night">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,11 +23,11 @@
 <style>
 :root{
   --felt:#0F3D33; --felt-2:#145040; --felt-deep:#0A2C25; --rail:#06201A;
-  --night:#1F1335; --night-2:#35204F; --night-deep:#120B20; --blossom:#F6B3C9; --lacquer:#C8322B;
+  --night:#4A2478; --night-2:#8656C4; --night-deep:#1C0B30; --blossom:#F6B3C9; --lacquer:#C8322B;
   --zh:"Ma Shan Zheng","Noto Serif CJK SC","Songti SC","STKaiti",serif;
   --ivory:#F6F0E1; --bone:#E4D9BF; --ink:#22201B;
   --crak:#E0453A; --dot:#2F7BD6; --bam:#3DB36B; --gold:#F2B630; --plum:#A66CE8; --teal:#1FB5B0;
-  --text:#F4ECF4; --muted:#C7B3D6;
+  --text:#F4ECF4; --muted:#E0CFF0;
   --display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
   --body:"Nunito",ui-rounded,system-ui,-apple-system,"Segoe UI",sans-serif;
 }
@@ -35,7 +35,7 @@
 html,body{margin:0}
 html{background:var(--night-deep)}
 body{
-  background:radial-gradient(120% 70% at 50% -10%,var(--night-2),var(--night) 45%,var(--night-deep));
+  background:linear-gradient(180deg,var(--night-2) 0%,var(--night) 38%,var(--night-deep) 100%);
   color:var(--text); font:500 16px/1.45 var(--body);
   min-height:100vh; padding-bottom:calc(84px + env(safe-area-inset-bottom));
   -webkit-tap-highlight-color:transparent;
@@ -67,7 +67,7 @@ header{padding:calc(14px + env(safe-area-inset-top)) 0 6px}
 .b-update{background:var(--gold);color:var(--ink)} .b-update button{background:var(--ink);color:var(--gold)}
 .b-activity{background:var(--dot);color:#fff} .b-activity button{background:#fff;color:var(--dot)}
 .b-activity .x{background:transparent;color:#fff;padding:6px}
-.b-local{background:#2E2338;color:var(--gold);border:1px solid rgba(242,182,48,.4)}
+.b-local{background:#3A1E5C;color:var(--gold);border:1px solid rgba(242,182,48,.4)}
 
 /* section heads */
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:20px 0 10px}
@@ -85,7 +85,7 @@ header{padding:calc(14px + env(safe-area-inset-top)) 0 6px}
 
 /* the table card */
 .tables{display:grid;gap:18px}
-.tcard{background:rgba(18,11,32,.72);border-radius:26px;padding:14px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
+.tcard{background:rgba(28,11,48,.55);border-radius:26px;padding:14px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
 .felt{position:relative;aspect-ratio:1/0.82;margin:4px 6px 10px;border-radius:30px;
   background:radial-gradient(circle at 50% 45%,#1C7A5F,#12573F 70%);
   box-shadow:inset 0 0 0 9px var(--rail),inset 0 0 0 11px #2A6B57,0 10px 24px rgba(0,0,0,.35)}
@@ -120,7 +120,7 @@ header{padding:calc(14px + env(safe-area-inset-top)) 0 6px}
 
 /* games log */
 .glist{display:grid;gap:10px}
-.game{background:rgba(18,11,32,.72);border-radius:16px;padding:12px 14px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
+.game{background:rgba(28,11,48,.55);border-radius:16px;padding:12px 14px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
 .game .l1{display:flex;gap:8px;align-items:baseline}
 .game .l1 b{font-size:17px;font-weight:900;flex:1}
 .game .l1 small{color:var(--muted);font-weight:700;font-size:13px;white-space:nowrap}
@@ -141,14 +141,14 @@ header{padding:calc(14px + env(safe-area-inset-top)) 0 6px}
 .ptile button{border:0;background:transparent;color:#8f8670;font-weight:900;padding:0 6px;font-size:18px;line-height:1}
 .ptile.out{opacity:.5;box-shadow:0 4px 0 #8f8670}
 .ptile.out button{font-size:13px;color:var(--ink)}
-.card{background:rgba(18,11,32,.72);border-radius:20px;padding:16px;margin-top:16px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
+.card{background:rgba(28,11,48,.55);border-radius:20px;padding:16px;margin-top:16px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.07)}
 .card h3{font:400 22px/1 var(--display);margin:0 0 10px}
 .card p{margin:0 0 12px;color:var(--muted);font-weight:700;font-size:14px}
 .empty{text-align:center;padding:30px 10px;color:var(--muted);font-weight:700}
 .empty .big{font:400 26px/1.1 var(--display);color:var(--text);margin-bottom:8px}
 
 /* tab bar */
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(18,11,32,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(28,11,48,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:6px;border-top:1px solid rgba(255,255,255,.08)}
 nav.tabs button{flex:1;max-width:130px;border:0;background:transparent;border-radius:14px;padding:7px 4px;font-weight:800;font-size:13px;color:var(--muted);display:grid;justify-items:center;gap:3px}
 nav.tabs button .ic{width:26px;height:20px;border-radius:5px;background:rgba(255,255,255,.1);display:grid;place-items:center}
@@ -163,7 +163,7 @@ nav.tabs button[data-tab=players][aria-selected=true] .ic i{background:var(--bam
 /* sheets */
 dialog{border:0;padding:0;background:transparent;color:var(--text);max-width:560px;width:100%;margin:auto auto 0;max-height:92vh}
 dialog::backdrop{background:rgba(0,0,0,.55)}
-.sheet{background:#1A1029;border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -1px 0 rgba(255,255,255,.1)}
+.sheet{background:#26103F;border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -1px 0 rgba(255,255,255,.1)}
 .sheet h3{font:400 26px/1 var(--display);margin:0 0 4px}
 .sheet .lead{color:var(--muted);font-weight:700;font-size:14px;margin:0 0 14px}
 .q{font-weight:900;margin:14px 0 8px;font-size:15px}
@@ -205,7 +205,6 @@ dialog::backdrop{background:rgba(0,0,0,.55)}
 .wrap{position:relative;z-index:1}
 .scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .scene .branch{position:absolute;right:-40px;top:-30px;width:240px;opacity:.6}
-.scene .parasol{position:absolute;left:-60px;bottom:70px;width:250px;opacity:.3;transform:rotate(-18deg)}
 .scene .chars{position:absolute;right:10px;top:42%;writing-mode:vertical-rl;font:400 92px/1 var(--zh);color:rgba(246,179,201,.07);letter-spacing:10px}
 .petal{position:absolute;top:-30px;width:12px;height:10px;background:var(--blossom);border-radius:12px 0 12px 0;opacity:.8;animation:fall linear infinite}
 @keyframes fall{0%{transform:translate(0,-5vh) rotate(0)}50%{transform:translate(-40px,50vh) rotate(200deg)}100%{transform:translate(20px,110vh) rotate(400deg)}}
@@ -224,14 +223,6 @@ footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;paddi
       <g id="bud"><ellipse rx="5" ry="7" fill="#FFD9E4"/></g></defs>
     <path d="M330 10 C280 40 240 70 205 95 C170 120 130 150 60 222 M240 70 C255 95 262 115 262 120 M205 95 C190 80 170 78 160 80 M150 140 C140 140 130 150 120 160" stroke="#4A2A3A" stroke-width="5" fill="none" stroke-linecap="round"/>
     <use href="#bl" transform="translate(285 25) scale(1.4)"/> <use href="#bl" transform="translate(250 58) scale(1.1)"/> <use href="#bud" transform="translate(232 40) scale(1)"/> <use href="#bl" transform="translate(205 95) scale(1.3)"/> <use href="#bl" transform="translate(172 118) scale(0.9)"/> <use href="#bud" transform="translate(150 140) scale(1)"/> <use href="#bl" transform="translate(120 160) scale(1.2)"/> <use href="#bl" transform="translate(95 195) scale(0.8)"/> <use href="#bud" transform="translate(80 175) scale(0.9)"/> <use href="#bl" transform="translate(262 120) scale(1)"/> <use href="#bl" transform="translate(240 150) scale(0.8)"/> <use href="#bud" transform="translate(280 95) scale(1)"/> <use href="#bl" transform="translate(160 80) scale(0.9)"/> <use href="#bl" transform="translate(60 222) scale(1)"/>
-  </svg>
-  <svg class="parasol" viewBox="0 0 240 240">
-    <path d="M120 120 L120 235" stroke="#6E4A2A" stroke-width="5" stroke-linecap="round"/>
-    <path d="M10 120 A110 110 0 0 1 230 120 Z" fill="#C8322B"/>
-    <g fill="#A52520"><path d="M120 120 L10 120 A110 110 0 0 1 24 66 Z"/><path d="M120 120 L45 39 A110 110 0 0 1 98 12 Z"/><path d="M120 120 L142 12 A110 110 0 0 1 195 39 Z"/><path d="M120 120 L216 66 A110 110 0 0 1 230 120 Z"/></g>
-    <g stroke="#F2B630" stroke-width="2" opacity=".8"><path d="M120 120 L10 120"/><path d="M120 120 L24 66"/><path d="M120 120 L45 39"/><path d="M120 120 L98 12"/><path d="M120 120 L142 12"/><path d="M120 120 L195 39"/><path d="M120 120 L216 66"/><path d="M120 120 L230 120"/></g>
-    <path d="M10 120 A110 110 0 0 1 230 120" fill="none" stroke="#F2B630" stroke-width="3"/>
-    <circle cx="120" cy="8" r="6" fill="#F2B630"/>
   </svg>
   <div class="chars">麻將</div>
   <span class="petal" style="left:8%;animation-duration:14s;animation-delay:-2s;transform:scale(1)"></span><span class="petal" style="left:22%;animation-duration:18s;animation-delay:-9s;transform:scale(0.8)"></span><span class="petal" style="left:37%;animation-duration:16s;animation-delay:-5s;transform:scale(1.1)"></span><span class="petal" style="left:52%;animation-duration:20s;animation-delay:-12s;transform:scale(0.7)"></span><span class="petal" style="left:66%;animation-duration:15s;animation-delay:-1s;transform:scale(1)"></span><span class="petal" style="left:78%;animation-duration:19s;animation-delay:-7s;transform:scale(0.9)"></span><span class="petal" style="left:90%;animation-duration:17s;animation-delay:-13s;transform:scale(1)"></span><span class="petal" style="left:45%;animation-duration:22s;animation-delay:-16s;transform:scale(0.8)"></span>
@@ -268,7 +259,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;font-weight:700;paddi
 <script>
 (() => {
   // Bump VERSION here AND in version.json on every push.
-  const VERSION = "1.2";
+  const VERSION = "1.3";
 
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
