@@ -3792,7 +3792,7 @@ if(hot && hot.snapshot) try { hot.snapshot(() => WIPING ? null : saveObj()); } c
 // ===== PARTY: team disaster drill (multiplayer via Supabase realtime) =====
 // Everyone shares one valley. A drill sends a flood, a wildfire and a flash flood at three towns.
 // The crew evacuates residents, hauls supply crates (sandbags / water) and builds prefabs to save them.
-const PARTY_VERSION = '1.0';
+const PARTY_VERSION = '1.1';
 const PARTY_CODE = ((QS.get('party') || 'lab') + '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24) || 'lab';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random()*16|0).toString(16)));
@@ -4172,11 +4172,12 @@ function partyDrive(dt, up, dn, left, right){
   if(mud){
     // deep patches come and go: lose momentum or steer hard and you bog down
     const deep = 0.5 + 0.5*Math.sin(S.x*0.09 + Math.sin(S.z*0.07)*2) * Math.cos(S.z*0.08);
-    const grip = (mudTires ? 1.4 : 0.8) - deep*0.9 - (left || right ? 0.3 : 0);
-    if(grip < 0.5 && (up || dn) && Math.abs(PT.bv) < (mudTires ? 2.2 : 3.2)) PT.mudT += dt*(1.2 - grip); else PT.mudT = Math.max(0, PT.mudT - dt*0.5);
+    const grip = (mudTires ? 1.3 : 0.6) - deep*0.9 - (left || right ? 0.3 : 0);
+    PT.deep = deep;
+    if(grip < 0.5 && (up || dn)) PT.mudT += dt*(0.6 - grip)*1.6*(1.6 - Math.abs(PT.bv)/4); else PT.mudT = Math.max(0, PT.mudT - dt*0.5);
     if(PT.mudT > 1.1){ PT.stuck = 1; PT.rock = 0; PT.mudT = 0; toast('bang', 'STUCK! ROCK W / S — OR WINCH (Q)', 'bad'); thud(); }
   }
-  const top = mud ? (mudTires ? 7 : 3.5) : mudTires ? (boost ? 20 : 13) : (boost ? 26 : 16);
+  const top = mud ? (mudTires ? 7 : 4)*(1 - 0.55*(PT.deep || 0)) : mudTires ? (boost ? 20 : 13) : (boost ? 26 : 16);
   const tgt = up ? top : dn ? (mud && !mudTires ? -2 : -6) : 0;
   PT.bv += clamp(tgt - PT.bv, -dt*(up || dn ? 10 : 6), dt*(up ? 7 : 10));
   const turn = (right ? 1 : 0) - (left ? 1 : 0);
