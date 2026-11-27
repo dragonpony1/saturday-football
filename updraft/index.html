@@ -325,7 +325,7 @@ body.touch #btns{transform:scale(.85);transform-origin:right top}
   </div>
 </div>
 <div id="buildMenu" class="ovl" hidden><div class="ovlBox"><div class="ovlTop"><h2>BUILD</h2><button class="big alt" id="buildClose" type="button">✕</button></div><div id="buildGrid"></div></div></div>
-<div id="board" class="ovl" hidden><div class="ovlBox"><div class="ovlTop"><h2>CREW</h2><button class="big alt" id="boardClose" type="button">✕</button><div id="boardCode"></div></div><div id="boardBody"></div><div class="boardBtns"><button class="big" id="bDrill" type="button">Start disaster drill</button></div></div></div>
+<div id="board" class="ovl" hidden><div class="ovlBox"><div class="ovlTop"><h2>CREW</h2><button class="big alt" id="boardClose" type="button">✕</button><div id="boardCode"></div></div><div id="boardBody"></div><div class="boardBtns"><button class="big" id="bDrill" type="button">Start disaster drill</button><p id="drillWait" class="dbody">The host starts the drill. Practice flying, scout the towns, or pick your role while you wait.</p></div></div></div>
 <button id="newVer" type="button" hidden>New version — tap to refresh</button>
 <div id="mapWrap" hidden><div id="mapBox"><canvas id="map" width="2340" height="720"></canvas><button class="big alt" id="mapClose" type="button">✕</button></div></div>
 <div id="radio" hidden></div>
@@ -3792,7 +3792,7 @@ if(hot && hot.snapshot) try { hot.snapshot(() => WIPING ? null : saveObj()); } c
 // ===== PARTY: team disaster drill (multiplayer via Supabase realtime) =====
 // Everyone shares one valley. A drill sends a flood, a wildfire and a flash flood at three towns.
 // The crew evacuates residents, hauls supply crates (sandbags / water) and builds prefabs to save them.
-const PARTY_VERSION = '1.1';
+const PARTY_VERSION = '1.2';
 const PARTY_CODE = ((QS.get('party') || 'lab') + '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24) || 'lab';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random()*16|0).toString(16)));
@@ -3807,6 +3807,8 @@ const TIRES = { mud: { name: 'Mud tires', blurb: 'Better in mud, slower on dry' 
 const BUGGY_CAP = { people: 4, crates: 6 };
 const CRATE_PTS = 5;
 
+// ---- host: only the person with the host link can start or restart a drill ----
+const HOST = (function(){ try { if(QS.get('host') === 'deseretpeak') localStorage.setItem('updraft-host', '1'); return localStorage.getItem('updraft-host') === '1'; } catch(_){ return QS.get('host') === 'deseretpeak'; } })();
 // ---- who am I ----
 const ME = (function(){
   let o = null; try { o = JSON.parse(localStorage.getItem('updraft-me') || 'null'); } catch(_){}
@@ -3950,7 +3952,7 @@ let DR = null;      // current drill state
 function blankMine(){ return { evacTown: {}, buggyEvac: 0, crates: { flood: 0, fire: 0 }, built: { lake: {}, juniper: {}, ranch: {} }, warned: 0, shelters: 0, climb: false, people: 0, crateN: 0, builds: 0 }; }
 function refold(newRow){
   const ev = NET.events;
-  let round = null; for(const e of ev) if(e.type === 'round') round = e;
+  let round = null; for(const e of ev) if(e.type === 'round' && e.data.host) round = e;
   const builds = {}; const contrib = {};
   for(const e of ev){
     if(e.type === 'build') builds[e.id] = e;
@@ -4009,10 +4011,11 @@ function afterFold(row){
 function townNear(x, z, r){ for(const t of TOWNS) if(Math.hypot(t.x - x, t.z - z) < r) return t; return null; }
 function drillCardHTML(title, body){ return '<div class="job"><div class="jh">' + svg('bang', '#ff6b4f', ' class="ic"') + '<span>DISPATCH</span></div><h3>' + title + '</h3><p class="dbody">' + body + '</p></div>'; }
 function startDrill(){
+  if(!HOST) return;
   if(DR && !DR.over && !PT.wipeRound){ PT.wipeRound = true; renderBoard(); return; }
   PT.wipeRound = false;
   const id = uid();
-  const row = { id, party: PARTY_CODE, type: 'round', data: { t: Date.now(), t0: Date.now() + 8000, crew: crewList().length, round: id }, who: ME.id, name: ME.name, created_at: new Date().toISOString() };
+  const row = { id, party: PARTY_CODE, type: 'round', data: { t: Date.now(), t0: Date.now() + 8000, crew: crewList().length, round: id, host: true }, who: ME.id, name: ME.name, created_at: new Date().toISOString() };
   addEvent(row); refold(row);
   if(NET.ch && NET.status === 'live') NET.ch.send({ type: 'broadcast', event: 'ev', payload: row }).catch(() => {});
   if(NET.db && NET.table){ const { created_at, ...ins } = row; NET.db.from('updraft_events').insert(ins).then(() => {}); }
@@ -4422,7 +4425,7 @@ function partyInteract(){
   const dc = Math.hypot(t.x - S.x, t.z - S.z);
   if(dc > LZ_R){ toast('sock', PT.buggy ? 'PARK INSIDE THE RING' : S.mode === 'heli' ? 'LAND INSIDE THE RING' : 'LAND INSIDE THE RING — PRECISION LANDING', 'bad'); return true; }
   if(PT.buggy && Math.abs(PT.bv) > 1.5){ toast('boot', 'STOP FIRST', 'bad'); return true; }
-  if(!DR || DR.over){ toast('bang', 'NO DRILL RUNNING — PRESS K TO START ONE', ''); return true; }
+  if(!DR || DR.over){ toast('bang', HOST ? 'NO DRILL RUNNING — PRESS K TO START ONE' : 'NO DRILL YET — WAIT FOR THE HOST', ''); return true; }
   const T = DR.towns[t.id], now = Date.now();
   if(now < DR.t0){ toast('bang', 'DRILL STARTS IN A FEW SECONDS', ''); return true; }
   if(now >= T.strike){ toast('bang', t.name.toUpperCase() + (T.saved ? ' IS SAFE' : ' IS LOST'), T.saved ? 'good' : 'bad'); return true; }
@@ -4467,7 +4470,7 @@ function partyPrompts(pr, kc){
 function partyMissionRow(){
   let h = '';
   if(ME.role){ const r = RBY[ME.role], have = DR ? Math.min(r.n, r.prog(DR.mine)) : 0, done = DR && have >= r.n;
-    h += '<div class="tq mission' + (done ? ' ready' : '') + '">' + svg(r.icon, ME.color, ' class="ic"') + '<span class="tt"><b>' + r.name.toUpperCase() + '</b> · ' + r.goal + '</span><span class="nd' + (done ? ' ok' : '') + '"><b>' + (DR ? have + '/' + r.n : 'K TO START') + '</b></span></div>'; }
+    h += '<div class="tq mission' + (done ? ' ready' : '') + '">' + svg(r.icon, ME.color, ' class="ic"') + '<span class="tt"><b>' + r.name.toUpperCase() + '</b> · ' + r.goal + '</span><span class="nd' + (done ? ' ok' : '') + '"><b>' + (DR ? have + '/' + r.n : (HOST ? 'K TO START' : 'WAITING')) + '</b></span></div>'; }
   if(PT.carry.people || PT.carry.crates) h += '<div class="tq">' + svg('parcel', '#ffc65a', ' class="ic"') + '<span class="tt">ON BOARD</span>' + (PT.carry.people ? '<span class="nd"><b>' + PT.carry.people + '</b> people</span>' : '') + (PT.carry.crates ? '<span class="nd"><b>' + PT.carry.crates + '</b> crates</span>' : '') + '</div>';
   return h;
 }
@@ -4485,7 +4488,7 @@ function renderDrillHUD(){
       h += '<div class="dt ' + t.threat + (struck ? ' struck' : '') + '"><div class="dn">' + svg(t.threat === 'fire' ? 'sun' : 'drop', t.threat === 'fire' ? '#ff8a6a' : '#86c9e6', ' class="ic"') + '<span>' + t.name.toUpperCase() + '</span>' + st + '</div>' +
         '<div class="dbar"><span style="width:' + pct + '%"></span></div><div class="dm"><span>' + svg('person', '#f4ecdb', ' class="ic"') + T.left + ' left</span><span>' + (t.threat === 'fire' ? 'firebreak ' : 'levee ') + T.def + '/' + T.want + '</span></div></div>';
     }
-  } else h = '<div class="dh">NO DRILL RUNNING · <span class="kc">K</span> CREW</div>';
+  } else h = '<div class="dh">' + (HOST ? 'NO DRILL RUNNING · <span class="kc">K</span> START ONE' : 'WAITING FOR THE HOST TO START THE DRILL') + '</div>';
   if(h !== lastDrill){ lastDrill = h; el.innerHTML = h; }
 }
 function drawPartyMap(ctx, mx, mz){
@@ -4554,6 +4557,7 @@ function renderBoard(){
   if(DR){ const rows = Object.entries(DR.contrib).filter(([, c]) => c.people || c.crates || c.builds).sort((a, b) => (b[1].people*3 + b[1].crates + b[1].builds*2) - (a[1].people*3 + a[1].crates + a[1].builds*2));
     if(rows.length) mvp = '<h4>Crew tally</h4><div class="tally">' + rows.map(([id, c]) => '<div><b>' + esc(c.name || 'Pilot') + '</b><span>' + c.people + ' rescued · ' + c.crates + ' crates · ' + c.builds + ' builds</span></div>').join('') + '</div>'; }
   $('boardBody').innerHTML = head + '<h4>Roles — tap an open one to switch</h4><div class="roles">' + roles + '</div>' + mvp;
+  $('bDrill').hidden = !HOST; $('drillWait').hidden = HOST;
   $('bDrill').textContent = DR && !DR.over ? (PT.wipeRound ? 'Restart for everyone?' : 'Restart drill') : 'Start disaster drill';
   $('bDrill').classList.toggle('danger', !!PT.wipeRound);
   $('boardCode').textContent = 'PARTY CODE: ' + PARTY_CODE.toUpperCase() + ' · ' + crew.length + ' ONLINE';
